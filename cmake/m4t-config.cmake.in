@@ -1,0 +1,7 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(GTest)
+
+include("${CMAKE_CURRENT_LIST_DIR}/m4t-targets.cmake")
+check_required_components(m4t)
