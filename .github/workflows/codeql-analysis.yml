@@ -40,18 +40,18 @@ jobs:
         languages: cpp
         queries: security-and-quality
 
+    - name: Initialize CodeQL for Pull Request
+      if: github.event_name == 'pull_request'
+      uses: github/codeql-action/init@v1
+      with:
+        languages: cpp
+
     - name: Configure
       uses: mbeckh/cmake-utils/configure@master
       with:
         build-root: build
         binary-dir: build/Debug
         configuration: Debug
-
-    - name: Initialize CodeQL for Pull Request
-      if: github.event_name == 'pull_request'
-      uses: github/codeql-action/init@v1
-      with:
-        languages: cpp
 
     - name: Build
       shell: cmd
