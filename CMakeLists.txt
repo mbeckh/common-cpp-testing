@@ -13,9 +13,9 @@
 # limitations under the License.
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
-project("m4t" VERSION 0.0.1
+project("common-cpp-testing" VERSION 0.0.1
     DESCRIPTION "Common C++ library for testing"
-    HOMEPAGE_URL "https://github.com/mbeckh/m4t"
+    HOMEPAGE_URL "https://github.com/mbeckh/common-cpp-testing"
     LANGUAGES CXX)
 
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}" IS_MAIN_PROJECT)
