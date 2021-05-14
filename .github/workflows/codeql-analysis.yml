@@ -27,8 +27,8 @@ jobs:
     - name: Cache vcpkg
       uses: actions/cache@v2
       with:
-        path: build/Debug/vcpkg_installed
-        key: vcpkg_installed-Debug-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
+        path: build/Release/vcpkg_installed
+        key: vcpkg_installed-Release-${{hashFiles('**/vcpkg.json', '**/vcpkg-configuration.json', '!build/**')}}
 
     - name: Setup MSVC Environment
       uses: mbeckh/msvc-dev-cmd@master
@@ -50,12 +50,12 @@ jobs:
       uses: mbeckh/cmake-utils/configure@master
       with:
         build-root: build
-        binary-dir: build/Debug
-        configuration: Debug
+        binary-dir: build/Release
+        configuration: Release
 
     - name: Build
       shell: cmd
-      working-directory: build/Debug
+      working-directory: build/Release
       run: cmake --build .
 
     - name: Perform CodeQL Analysis

@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Get Coverage and Perform Static Analysis
+    name: Build and Analyze
     runs-on: windows-latest
     strategy:
       matrix:
@@ -52,6 +52,11 @@ jobs:
         binary-dir: build/${{matrix.configuration}}
         codecov: true
         codacy-token: ${{secrets.CODACY_PROJECT_API_TOKEN}}
+
+    - name: Analyze
+      shell: cmd
+      working-directory: build/${{matrix.configuration}}
+      run: cmake --build . --target clang-tidy
 
     - name: Report
       uses: mbeckh/code-quality-actions/report@master
