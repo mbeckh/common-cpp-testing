@@ -11,12 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
 
-string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}" IS_MAIN_PROJECT)
-option(BUILD_TESTING "Build tests" ${IS_MAIN_PROJECT})
-
-project("common-cpp-testing" VERSION 0.0.1
+project("common-cpp-testing" VERSION 0.0.2
     DESCRIPTION "Common C++ library for testing"
     HOMEPAGE_URL "https://github.com/mbeckh/common-cpp-testing"
     LANGUAGES CXX)
@@ -26,12 +23,11 @@ find_package(GTest REQUIRED)
 add_library(m4t
     "src/IStream_Mock.cpp"
     "src/MallocSpy.cpp"
-    "src/memory.cpp"
+    "src/m4t.cpp"
     "include/m4t/IStream_Mock.h"
     "include/m4t/m4t.h"
     "include/m4t/MallocSpy.h"
-    "include/m4t/memory.h"
-)
+ )
 add_library(m4t::m4t ALIAS m4t)
 
 target_compile_definitions(m4t PRIVATE WIN32_LEAN_AND_MEAN=1 NOMINMAX=1)
@@ -46,23 +42,23 @@ set_target_properties(m4t PROPERTIES
 )
 target_link_libraries(m4t PUBLIC GTest::gmock propsys)
 
-include(CMakePackageConfigHelpers)
-configure_package_config_file("cmake/m4t-config.cmake.in" "m4t-config.cmake" INSTALL_DESTINATION "share/m4t")
-write_basic_package_version_file("${PROJECT_BINARY_DIR}/m4t-config-version.cmake" VERSION ${m4t_VERSION} COMPATIBILITY SameMajorVersion)
+if(PROJECT_IS_TOP_LEVEL)
+    include(CMakePackageConfigHelpers)
+    configure_package_config_file("cmake/m4t-config.cmake.in" "m4t-config.cmake" INSTALL_DESTINATION "share/m4t")
+    write_basic_package_version_file("${PROJECT_BINARY_DIR}/m4t-config-version.cmake" VERSION ${m4t_VERSION} COMPATIBILITY SameMajorVersion)
 
-install(TARGETS m4t EXPORT m4t-targets)
-install(DIRECTORY "include/m4t" TYPE INCLUDE)
-install(EXPORT m4t-targets DESTINATION "share/m4t" NAMESPACE "m4t::")
-install(FILES "${PROJECT_BINARY_DIR}/m4t-config.cmake" "${PROJECT_BINARY_DIR}/m4t-config-version.cmake" DESTINATION "share/m4t")
+    install(TARGETS m4t EXPORT m4t-targets)
+    install(DIRECTORY "include/m4t" TYPE INCLUDE)
+    install(EXPORT m4t-targets DESTINATION "share/m4t" NAMESPACE "m4t::")
+    install(FILES "${PROJECT_BINARY_DIR}/m4t-config.cmake" "${PROJECT_BINARY_DIR}/m4t-config-version.cmake" DESTINATION "share/m4t")
+endif()
 
-
-if(BUILD_TESTING)
-	include(GoogleTest)
+if(PROJECT_IS_TOP_LEVEL)
 	enable_testing()
 
     add_executable(m4t_Test
-        "test/m4t_Test.cpp"
         "test/IStream_Mock_Test.cpp"
+        "test/m4t_Test.cpp"
         "test/MallocSpy_Test.cpp"
     )
 
@@ -77,5 +73,5 @@ if(BUILD_TESTING)
     )
     target_link_libraries(m4t_Test PRIVATE m4t::m4t GTest::gmock GTest::gmock_main)
 
-    gtest_discover_tests(m4t_Test)
+    add_test(NAME m4t_Test_PASS COMMAND m4t_Test)
 endif()

@@ -33,6 +33,13 @@ jobs:
     - name: Setup MSVC Environment
       uses: mbeckh/msvc-dev-cmd@master
 
+    - name: Configure
+      uses: mbeckh/cmake-utils/configure@master
+      with:
+        build-root: build
+        binary-dir: build/Release
+        configuration: Release
+
     - name: Initialize CodeQL
       if: github.event_name != 'pull_request'
       uses: github/codeql-action/init@v1
@@ -45,13 +52,6 @@ jobs:
       uses: github/codeql-action/init@v1
       with:
         languages: cpp
-
-    - name: Configure
-      uses: mbeckh/cmake-utils/configure@master
-      with:
-        build-root: build
-        binary-dir: build/Release
-        configuration: Release
 
     - name: Build
       shell: cmd

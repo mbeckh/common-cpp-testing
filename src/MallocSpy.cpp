@@ -31,15 +31,13 @@ namespace m4t {
 //
 
 HRESULT MallocSpy::QueryInterface(REFIID riid, _COM_Outptr_ void** const ppObject) noexcept {
-	if (!ppObject) {
-		[[unlikely]];
+	if (!ppObject) [[unlikely]] {
 		return E_INVALIDARG;
 	}
 
-	if (IsEqualIID(riid, IID_IMallocSpy) || IsEqualIID(riid, IID_IUnknown)) {
-		[[likely]];
+	if (IsEqualIID(riid, IID_IMallocSpy) || IsEqualIID(riid, IID_IUnknown)) [[likely]] {
 		*ppObject = this;
-		static_cast<IMallocSpy*>(this)->AddRef();
+		static_cast<IUnknown*>(this)->AddRef();
 		return S_OK;
 	}
 	*ppObject = nullptr;
@@ -52,8 +50,7 @@ ULONG MallocSpy::AddRef() noexcept {
 
 ULONG MallocSpy::Release() noexcept {
 	const ULONG refCount = InterlockedDecrement(&m_refCount);
-	if (!refCount) {
-		[[unlikely]];
+	if (!refCount) [[unlikely]] {
 		delete this;
 	}
 	return refCount;
@@ -70,7 +67,7 @@ SIZE_T __stdcall MallocSpy::PreAlloc(_In_ const SIZE_T cbRequest) noexcept {
 
 void* __stdcall MallocSpy::PostAlloc(_In_ void* const pActual) noexcept {
 	try {
-		std::scoped_lock<decltype(m_mutex)> lock(m_mutex);
+		std::scoped_lock lock(m_mutex);
 		m_allocated.insert(pActual);
 	} catch (...) {
 		// ignore
@@ -82,7 +79,7 @@ void* __stdcall MallocSpy::PostAlloc(_In_ void* const pActual) noexcept {
 
 void* __stdcall MallocSpy::PreFree(_In_ void* const pRequest, _In_ const BOOL /* fSpyed */) noexcept {
 	try {
-		std::scoped_lock<decltype(m_mutex)> lock(m_mutex);
+		std::scoped_lock lock(m_mutex);
 		m_allocated.erase(pRequest);
 		m_deleted.insert(pRequest);
 	} catch (...) {
@@ -99,7 +96,7 @@ void __stdcall MallocSpy::PostFree(_In_ const BOOL /* fSpyed */) noexcept {
 
 SIZE_T __stdcall MallocSpy::PreRealloc(_In_ void* const pRequest, _In_ const SIZE_T cbRequest, _Outptr_ void** const ppNewRequest, _In_ BOOL /* fSpyed */) noexcept {
 	try {
-		std::scoped_lock<decltype(m_mutex)> lock(m_mutex);
+		std::scoped_lock lock(m_mutex);
 		m_allocated.erase(pRequest);
 		m_deleted.insert(pRequest);
 	} catch (...) {
@@ -107,8 +104,7 @@ SIZE_T __stdcall MallocSpy::PreRealloc(_In_ void* const pRequest, _In_ const SIZ
 		[[unlikely]];
 	}
 
-	if (ppNewRequest) {
-		[[likely]];
+	if (ppNewRequest) [[likely]] {
 		*ppNewRequest = pRequest;
 	}
 	return cbRequest;
@@ -116,7 +112,7 @@ SIZE_T __stdcall MallocSpy::PreRealloc(_In_ void* const pRequest, _In_ const SIZ
 
 void* __stdcall MallocSpy::PostRealloc(_In_ void* const pActual, _In_ BOOL /* fSpyed */) noexcept {
 	try {
-		std::scoped_lock<decltype(m_mutex)> lock(m_mutex);
+		std::scoped_lock lock(m_mutex);
 		m_allocated.insert(pActual);
 	} catch (...) {
 		// ignore
@@ -151,22 +147,22 @@ void __stdcall MallocSpy::PostHeapMinimize() noexcept {
 }
 
 bool MallocSpy::IsAllocated(const void* const p) const {
-	std::shared_lock<decltype(m_mutex)> lock(m_mutex);
+	std::shared_lock lock(m_mutex);
 	return m_allocated.contains(p);
 }
 
 bool MallocSpy::IsDeleted(const void* p) const {
-	std::shared_lock<decltype(m_mutex)> lock(m_mutex);
+	std::shared_lock lock(m_mutex);
 	return m_deleted.contains(p);
 }
 
 std::size_t MallocSpy::GetAllocatedCount() const {
-	std::shared_lock<decltype(m_mutex)> lock(m_mutex);
+	std::shared_lock lock(m_mutex);
 	return m_allocated.size();
 }
 
 std::size_t MallocSpy::GetDeletedCount() const {
-	std::shared_lock<decltype(m_mutex)> lock(m_mutex);
+	std::shared_lock lock(m_mutex);
 	return m_deleted.size();
 }
 
