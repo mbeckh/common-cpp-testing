@@ -38,7 +38,7 @@ limitations under the License.
 
 namespace m4t::test {
 
-TEST(m4t, AssertExpect) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non-const-global-variables)
+TEST(m4t, AssertExpect) {
 	static int value = 1;
 
 	ASSERT_NULL(nullptr);
@@ -54,7 +54,23 @@ TEST(m4t, AssertExpect) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non
 	EXPECT_NOT_NULL(&value);
 }
 
-TEST(m4t, ComMock) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non-const-global-variables)
+TEST(m4t, WithLocale) {
+	{
+		const std::string str = WithLocale("en-US", [] {
+			return std::system_category().message(ERROR_ACCESS_DENIED);
+		});
+		EXPECT_EQ("Access is denied.", str);
+	}
+
+	{
+		const std::string str = WithLocale("de-DE", [] {
+			return std::system_category().message(ERROR_ACCESS_DENIED);
+		});
+		EXPECT_EQ("Zugriff verweigert", str);
+	}
+}
+
+TEST(m4t, ComMock) {
 	COM_MOCK_DECLARE(mock, IStream_Mock);
 
 	COM_MOCK_SETUP(mock, IStream);
@@ -88,7 +104,16 @@ TEST(m4t, ComMock) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non-cons
 	COM_MOCK_VERIFY(mock);
 }
 
-TEST(m4t, MatchesRegex) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non-const-global-variables)
+TEST(m4t, BitsSet) {
+	EXPECT_THAT(4, BitsSet(4));
+	EXPECT_THAT(5, BitsSet(4));
+	EXPECT_THAT(7, BitsSet(6));
+
+	EXPECT_NONFATAL_FAILURE(EXPECT_THAT(0, BitsSet(6)), "bits set");
+	EXPECT_NONFATAL_FAILURE(EXPECT_THAT(4, BitsSet(6)), "bits set");
+}
+
+TEST(m4t, MatchesRegex) {
 	EXPECT_THAT("abcd", MatchesRegex(std::regex(".Bx?C.", std::regex::icase)));
 	EXPECT_THAT(L"abcd", MatchesRegex(std::wregex(L"^.Bx?C.$", std::regex::icase)));
 	EXPECT_THAT("abcd", MatchesRegex(".bx?c."));
@@ -98,7 +123,7 @@ TEST(m4t, MatchesRegex) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non
 	EXPECT_NONFATAL_FAILURE(EXPECT_THAT("abcd", MatchesRegex("bc")), "matches regex");
 }
 
-TEST(m4t, SetComObject) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non-const-global-variables)
+TEST(m4t, SetComObject) {
 	COM_MOCK_DECLARE(mock, IStream_Mock);
 	COM_MOCK_SETUP(mock, IStream);
 
@@ -116,7 +141,7 @@ TEST(m4t, SetComObject) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non
 	COM_MOCK_VERIFY(mock);
 }
 
-TEST(m4t, SetPropVariant) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non-const-global-variables)
+TEST(m4t, SetPropVariant) {
 	constexpr std::uint32_t kUInt32Value = 75u;
 
 	COM_MOCK_DECLARE(mock, IStream_Mock);

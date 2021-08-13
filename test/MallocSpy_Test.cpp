@@ -32,7 +32,7 @@ limitations under the License.
 
 namespace m4t::test {
 
-TEST(MallocSpy, QueryInterface) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non-const-global-variables)
+TEST(MallocSpy, QueryInterface) {
 	MallocSpy* const pMallocSpy = new MallocSpy();
 
 	EXPECT_EQ(E_INVALIDARG, pMallocSpy->QueryInterface(IID_IUnknown, nullptr));
@@ -50,7 +50,7 @@ TEST(MallocSpy, QueryInterface) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-a
 	EXPECT_EQ(0u, pMallocSpy->Release());
 }
 
-TEST(MallocSpy, AddRefRelease) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non-const-global-variables)
+TEST(MallocSpy, AddRefRelease) {
 	thread_local bool deleted = false;
 
 	class TrackingMallocSpy : public MallocSpy {
@@ -75,7 +75,7 @@ TEST(MallocSpy, AddRefRelease) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-av
 	EXPECT_TRUE(deleted);
 }
 
-TEST(MallocSpy, AllocFree) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non-const-global-variables)
+TEST(MallocSpy, AllocFree) {
 	MallocSpy* const pMallocSpy = new MallocSpy();
 
 	int* ptr = nullptr;
@@ -104,7 +104,7 @@ TEST(MallocSpy, AllocFree) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-
 	EXPECT_EQ(0u, pMallocSpy->GetAllocatedCount());
 	EXPECT_EQ(1u, pMallocSpy->GetDeletedCount());
 
-	int* ptrValue = ptr;
+	const int* const ptrValue = ptr;
 	delete ptr;
 
 	pMallocSpy->PostFree(TRUE);
@@ -117,7 +117,7 @@ TEST(MallocSpy, AllocFree) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-
 	pMallocSpy->Release();
 }
 
-TEST(MallocSpy, Realloc) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non-const-global-variables)
+TEST(MallocSpy, Realloc) {
 	MallocSpy* const pMallocSpy = new MallocSpy();
 
 	void* ptr = nullptr;
@@ -170,10 +170,10 @@ TEST(MallocSpy, Realloc) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-no
 	pMallocSpy->Release();
 }
 
-TEST(MallocSpy, GetSizeDidAllocHeapMinimize) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non-const-global-variables)
+TEST(MallocSpy, GetSizeDidAllocHeapMinimize) {
 	MallocSpy* const pMallocSpy = new MallocSpy();
 
-	int* ptr = new int;
+	int* const ptr = new int;
 
 	EXPECT_EQ(ptr, pMallocSpy->PreGetSize(ptr, TRUE));
 	EXPECT_EQ(sizeof(*ptr), pMallocSpy->PostGetSize(sizeof(*ptr), TRUE));

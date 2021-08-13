@@ -32,7 +32,6 @@ limitations under the License.
 #include <tuple>
 #include <type_traits>
 
-
 #ifdef M4T_GOOGLETEST_SHORT_NAMESPACE
 namespace M4T_GOOGLETEST_SHORT_NAMESPACE = testing;
 #else
@@ -58,6 +57,41 @@ namespace t = testing;
 /// @brief Generates a failure if @p arg_ is `nullptr`.
 /// @param arg_ The argument to check.
 #define EXPECT_NOT_NULL(arg_) EXPECT_NE(nullptr, (arg_))  // NOLINT(cppcoreguidelines-macro-usage)
+
+#ifdef __SANITIZE_ADDRESS__
+extern "C" {
+int __asan_address_is_poisoned(void const volatile* addr);
+}
+
+/// @brief Generates a failure if @p p_ is not uninitialized memory.
+/// @param p_ The pointer to check. It MUST point to at least 4 valid bytes of memory.
+#define EXPECT_UNINITIALIZED(p_) __pragma(warning(suppress : 6001)) EXPECT_EQ(0xCDCDCDCD, *std::bit_cast<std::uint32_t*>((p_)))  // NOLINT(cppcoreguidelines-macro-usage)
+
+/// @brief Generates a failure if @p p_ is not deleted memory.
+/// @warning This macro requires ASan AddressSanitizer, else it is a no-op.
+/// @param p_ The pointer to check.
+#define EXPECT_DELETED(p_) EXPECT_EQ(1, __asan_address_is_poisoned((p_)))  // NOLINT(cppcoreguidelines-macro-usage)
+#else
+
+/// @brief Convert argument to string.
+/// @param arg_ The value.
+#define M4T_STRINGIZE(arg_) #arg_                                                                                                     // NOLINT(cppcoreguidelines-macro-usage)
+
+/// @brief Convert second argument to string.
+/// @param macro_ The stringize macro.
+/// @param arg_ The value.
+/// @see https://stackoverflow.com/a/5966882
+#define M4T_MAKE_STRING(macro_, value_) macro_(value_)                                                                                // NOLINT(cppcoreguidelines-macro-usage)
+
+/// @brief Generates a failure if @p p_ is not uninitialized memory.
+/// @param p_ The pointer to check. It MUST point to at least 4 valid bytes of memory.
+#define EXPECT_UNINITIALIZED(p_) __pragma(warning(suppress : 6001)) EXPECT_EQ(0xCDCDCDCD, *std::bit_cast<std::uint32_t*>((p_)))       // NOLINT(cppcoreguidelines-macro-usage)
+
+/// @brief Generates a failure if @p p_ is not deleted memory.
+/// @warning This macro requires ASan AddressSanitizer, else it is a no-op.
+/// @param p_ The pointer to check.
+#define EXPECT_DELETED(p_) __pragma(message(__FILE__ "(" M4T_MAKE_STRING(M4T_STRINGIZE, __LINE__) "): Deleted check requires ASAN"))  // NOLINT(cppcoreguidelines-macro-usage)
+#endif
 
 //
 // Mock helpers
@@ -101,17 +135,23 @@ constexpr int kInvalid = 0;  ///< @brief A variable whose address serves as a ma
 template <typename T>
 T* kInvalidPtr = reinterpret_cast<T*>(const_cast<int*>(&internal::kInvalid));  // NOLINT(cppcoreguidelines-pro-type-const-cast, cppcoreguidelines-avoid-non-const-global-variables, readability-identifier-naming)
 
+/// @brief A matcher that returns `true` if @p bits are set.
+/// @param bits The bit pattern to check.
+#pragma warning(suppress : 4100)
+MATCHER_P(BitsSet, bits, "") {
+	return (arg & bits) == bits;
+}
 
 /// @brief Create a matcher using `std::regex` instead of the regex library of googletest.
 /// @param pattern The regex or regex pattern to use.
 #pragma warning(suppress : 4100)
 MATCHER_P(MatchesRegex, pattern, "") {  // NOLINT(readability-redundant-string-init, misc-non-private-member-variables-in-classes)
 	if constexpr (std::is_same_v<pattern_type, std::regex> || std::is_same_v<pattern_type, std::wregex>) {
-		return std::regex_match(arg, (pattern));
-	} else if constexpr (std::is_same_v<pattern_type, const char*> || std::is_same_v<pattern_type, char*>) {
-		return std::regex_match(arg, std::regex((pattern)));
-	} else if constexpr (std::is_same_v<pattern_type, const wchar_t*> || std::is_same_v<pattern_type, wchar_t*>) {
-		return std::regex_match(arg, std::wregex((pattern)));
+		return std::regex_match(arg, pattern);
+	} else if constexpr (std::is_constructible_v<std::regex, pattern_type>) {
+		return std::regex_match(arg, std::regex(pattern));
+	} else if constexpr (std::is_constructible_v<std::wregex, pattern_type>) {
+		return std::regex_match(arg, std::wregex(pattern));
 	} else {
 #ifndef __clang_analyzer__
 		static_assert(false);
@@ -120,37 +160,68 @@ MATCHER_P(MatchesRegex, pattern, "") {  // NOLINT(readability-redundant-string-i
 }
 
 
+namespace internal {
+
+/// @brief A helper class for `WithLocale`.
+class LocaleSetter {
+public:
+	explicit LocaleSetter(const std::string& locale) {
+		SetUp(locale);
+	}
+	~LocaleSetter() {
+		TearDown();
+	}
+
+private:
+	void SetUp(const std::string& locale);
+	void TearDown();
+
+private:
+	ULONG m_num;
+	std::unique_ptr<wchar_t[]> m_buffer;
+};
+
+}  // namespace internal
+
+/// @brief Run some code in a thread using a user-defined locale.
+/// @tparam L The type of the closure.
+/// @param locale The name of the locale.
+/// @param lambda The code as a closure with no arguments.
+/// @return The result of calling @p lambda.
+template <typename L>
+auto WithLocale(const std::string& locale, L&& lambda) {
+	const internal::LocaleSetter setter(locale);
+	return lambda();
+}
+
+
 /// @brief Action for mocking `IUnknown::AddRef`.
 /// @param pRefCount A pointer to the variable holding the COM reference count.
-#pragma warning(suppress : 4100)
 ACTION_P(AddRef, pRefCount) {  // NOLINT(cppcoreguidelines-special-member-functions, misc-non-private-member-variables-in-classes)
 	static_assert(std::is_same_v<ULONG*, pRefCount_type>);
-	return ++*(pRefCount);
+	return ++*pRefCount;
 }
 
 /// @brief Action for mocking `IUnknown::Release`.
 /// @param pRefCount A pointer to the variable holding the COM reference count.
-#pragma warning(suppress : 4100)
 ACTION_P(Release, pRefCount) {  // NOLINT(cppcoreguidelines-special-member-functions, misc-non-private-member-variables-in-classes)
 	static_assert(std::is_same_v<ULONG*, pRefCount_type>);
-	return --*(pRefCount);
+	return --*pRefCount;
 }
 
 /// @brief Action for mocking `IUnknown::QueryInterface`.
 /// @param pObject The object to return as a result.
-#pragma warning(suppress : 4100)
 ACTION_P(QueryInterface, pObject) {  // NOLINT(cppcoreguidelines-special-member-functions, misc-non-private-member-variables-in-classes)
 	static_assert(std::is_same_v<REFIID, arg0_type>);
 	static_assert(std::is_same_v<void**, arg1_type>);
 	static_assert(std::is_base_of_v<IUnknown, std::remove_pointer_t<pObject_type>>);
 
-	*arg1 = (pObject);
-	static_cast<IUnknown*>((pObject))->AddRef();
+	*arg1 = pObject;
+	static_cast<IUnknown*>(pObject)->AddRef();
 	return S_OK;
 }
 
 /// @brief Action for mocking `IUnknown::QueryInterface` returning a failure.
-#pragma warning(suppress : 4100)
 ACTION(QueryInterfaceFail) {  // NOLINT(cppcoreguidelines-special-member-functions)
 	static_assert(std::is_same_v<REFIID, arg0_type>);
 	static_assert(std::is_same_v<void**, arg1_type>);
@@ -188,12 +259,12 @@ void SetupComMock(M& mock, ULONG& refCount) {
 /// @tparam idx 0-based index of the argument.
 /// @param pObject A pointer to a COM object.
 ACTION_TEMPLATE(SetComObject, HAS_1_TEMPLATE_PARAMS(int, idx), AND_1_VALUE_PARAMS(pObject)) {  // NOLINT(cppcoreguidelines-special-member-functions, misc-non-private-member-variables-in-classes)
-	using idx_type = typename std::tuple_element<(idx), args_type>::type;                      // NOLINT(readability-identifier-naming)
+	using idx_type = typename std::tuple_element<idx, args_type>::type;                        // NOLINT(readability-identifier-naming)
 	static_assert(std::is_base_of_v<IUnknown, std::remove_pointer_t<std::remove_pointer_t<idx_type>>>);
 	static_assert(std::is_base_of_v<IUnknown, std::remove_pointer_t<pObject_type>>);
 
-	*(t::get<(idx)>(args)) = (pObject);
-	(pObject)->AddRef();
+	*t::get<idx>(args) = pObject;
+	pObject->AddRef();
 }
 
 /// @brief Action for setting a pointer to a `PROPVARIANT` to a `VARIANT_BOOL` value.
@@ -201,12 +272,12 @@ ACTION_TEMPLATE(SetComObject, HAS_1_TEMPLATE_PARAMS(int, idx), AND_1_VALUE_PARAM
 /// @tparam idx 0-based index of the argument.
 /// @param variant A `VARIANT_BOOL`.
 ACTION_TEMPLATE(SetPropVariantToBool, HAS_1_TEMPLATE_PARAMS(int, idx), AND_1_VALUE_PARAMS(variantBool)) {  // NOLINT(cppcoreguidelines-special-member-functions, misc-non-private-member-variables-in-classes)
-	using idx_type = typename std::tuple_element<(idx), args_type>::type;                                  // NOLINT(readability-identifier-naming)
+	using idx_type = typename std::tuple_element<idx, args_type>::type;                                    // NOLINT(readability-identifier-naming)
 	static_assert(std::is_base_of_v<PROPVARIANT, std::remove_pointer_t<std::remove_pointer_t<idx_type>>>);
 	static_assert(std::is_same_v<VARIANT_BOOL, variantBool_type>);
 
-	PROPVARIANT* ppv = t::get<(idx)>(args);
-	ppv->boolVal = (variantBool);
+	PROPVARIANT* const ppv = t::get<idx>(args);
+	ppv->boolVal = variantBool;
 	ppv->vt = VT_BOOL;
 }
 
@@ -215,19 +286,17 @@ ACTION_TEMPLATE(SetPropVariantToBool, HAS_1_TEMPLATE_PARAMS(int, idx), AND_1_VAL
 /// @tparam idx 0-based index of the argument.
 /// @param wsz A wide character string.
 ACTION_TEMPLATE(SetPropVariantToBSTR, HAS_1_TEMPLATE_PARAMS(int, idx), AND_1_VALUE_PARAMS(wsz)) {  // NOLINT(cppcoreguidelines-special-member-functions, misc-non-private-member-variables-in-classes)
-	using idx_type = typename std::tuple_element<(idx), args_type>::type;                          // NOLINT(readability-identifier-naming)
+	using idx_type = typename std::tuple_element<idx, args_type>::type;                            // NOLINT(readability-identifier-naming)
 	static_assert(std::is_base_of_v<PROPVARIANT, std::remove_pointer_t<std::remove_pointer_t<idx_type>>>);
 
-	PROPVARIANT* ppv = t::get<(idx)>(args);
+	PROPVARIANT* const ppv = t::get<idx>(args);
 	PROPVARIANT pv;
-	HRESULT hr = InitPropVariantFromString((wsz), &pv);
-	if (FAILED(hr)) {
-		[[unlikely]];
+	HRESULT hr = InitPropVariantFromString(wsz, &pv);
+	if (FAILED(hr)) [[unlikely]] {
 		throw std::system_error(hr, std::system_category(), "InitPropVariantFromString");
 	}
 	hr = PropVariantChangeType(ppv, pv, 0, VARENUM::VT_BSTR);
-	if (FAILED(hr)) {
-		[[unlikely]];
+	if (FAILED(hr)) [[unlikely]] {
 		throw std::system_error(hr, std::system_category(), "PropVariantChangeType");
 	}
 }
@@ -236,13 +305,12 @@ ACTION_TEMPLATE(SetPropVariantToBSTR, HAS_1_TEMPLATE_PARAMS(int, idx), AND_1_VAL
 /// @details Usage: `SetPropVariantToEmpty<1>()`. The `PROPVARIANT` MUST NOT be null.
 /// @tparam idx 0-based index of the argument.
 ACTION_TEMPLATE(SetPropVariantToEmpty, HAS_1_TEMPLATE_PARAMS(int, idx), AND_0_VALUE_PARAMS()) {  // NOLINT(cppcoreguidelines-special-member-functions)
-	using idx_type = typename std::tuple_element<(idx), args_type>::type;                        // NOLINT(readability-identifier-naming)
+	using idx_type = typename std::tuple_element<idx, args_type>::type;                          // NOLINT(readability-identifier-naming)
 	static_assert(std::is_base_of_v<PROPVARIANT, std::remove_pointer_t<idx_type>>);
 
-	PROPVARIANT* ppv = t::get<(idx)>(args);
+	PROPVARIANT* const ppv = t::get<idx>(args);
 	const HRESULT hr = PropVariantClear(ppv);
-	if (FAILED(hr)) {
-		[[unlikely]];
+	if (FAILED(hr)) [[unlikely]] {
 		throw std::system_error(hr, std::system_category(), "PropVariantClear");
 	}
 }
@@ -252,12 +320,12 @@ ACTION_TEMPLATE(SetPropVariantToEmpty, HAS_1_TEMPLATE_PARAMS(int, idx), AND_0_VA
 /// @tparam idx 0-based index of the argument.
 /// @param variant An object of type `IStream`.
 ACTION_TEMPLATE(SetPropVariantToStream, HAS_1_TEMPLATE_PARAMS(int, idx), AND_1_VALUE_PARAMS(pStream)) {  // NOLINT(cppcoreguidelines-special-member-functions, misc-non-private-member-variables-in-classes)
-	using idx_type = typename std::tuple_element<(idx), args_type>::type;                                // NOLINT(readability-identifier-naming)
+	using idx_type = typename std::tuple_element<idx, args_type>::type;                                  // NOLINT(readability-identifier-naming)
 	static_assert(std::is_base_of_v<PROPVARIANT, std::remove_pointer_t<idx_type>>);
 
-	PROPVARIANT* ppv = t::get<(idx)>(args);
-	(pStream)->AddRef();
-	ppv->pStream = (pStream);
+	PROPVARIANT* const ppv = t::get<idx>(args);
+	pStream->AddRef();
+	ppv->pStream = pStream;
 	ppv->vt = VT_STREAM;
 }
 
@@ -266,11 +334,11 @@ ACTION_TEMPLATE(SetPropVariantToStream, HAS_1_TEMPLATE_PARAMS(int, idx), AND_1_V
 /// @tparam idx 0-based index of the argument.
 /// @param variant An object of type `IStream`.
 ACTION_TEMPLATE(SetPropVariantToUInt32, HAS_1_TEMPLATE_PARAMS(int, idx), AND_1_VALUE_PARAMS(value)) {  // NOLINT(cppcoreguidelines-special-member-functions, misc-non-private-member-variables-in-classes)
-	using idx_type = typename std::tuple_element<(idx), args_type>::type;                              // NOLINT(readability-identifier-naming)
+	using idx_type = typename std::tuple_element<idx, args_type>::type;                                // NOLINT(readability-identifier-naming)
 	static_assert(std::is_base_of_v<PROPVARIANT, std::remove_pointer_t<idx_type>>);
 
-	PROPVARIANT* ppv = t::get<(idx)>(args);
-	ppv->ulVal = (value);
+	PROPVARIANT* const ppv = t::get<idx>(args);
+	ppv->ulVal = value;
 	ppv->vt = VARENUM::VT_UI4;
 }
 

@@ -5,6 +5,7 @@ AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeConceptDeclarations: true
 BreakConstructorInitializers: BeforeComma
 BreakInheritanceList: BeforeComma
 ColumnLimit: 0
@@ -24,6 +25,7 @@ IncludeCategories:
     Priority: 1
 IncludeIsMainRegex: '(_Test)?$'
 IndentCaseLabels: false
+IndentRequires: false
 IndentWidth: 4
 MaxEmptyLinesToKeep: 2
 SpaceAfterCStyleCast: true

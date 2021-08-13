@@ -30,7 +30,7 @@ namespace m4t::test {
 
 namespace t = testing;
 
-TEST(IStream_Mock, Stat) {  // NOLINT(cert-err58-cpp, cppcoreguidelines-avoid-non-const-global-variables)
+TEST(IStream_Mock, Stat) {
 	IStream_Mock mock;
 
 	EXPECT_CALL(mock, Stat(t::_, STATFLAG_DEFAULT))
