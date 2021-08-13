@@ -33,7 +33,6 @@ jobs:
         build-root: build
         binary-dir: build/${{matrix.configuration}}
         configuration: ${{matrix.configuration}}
-        extra-args: -DVCPKG_DEBUG=1
 
     - name: Build
       shell: cmd
