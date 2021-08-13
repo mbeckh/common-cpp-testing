@@ -21,8 +21,30 @@ limitations under the License.
 #include <windows.h>
 
 #include <string>
+#include <system_error>
 
-namespace m4t::internal {
+namespace m4t {
+
+bool HasLocale(const std::string& locale) {
+	std::wstring names(locale.cbegin(), locale.cend());
+	names.push_back(L'\0');
+
+	DWORD fallbackSize = 0;
+	DWORD attributes = 0;
+	if (!GetUILanguageInfo(MUI_LANGUAGE_NAME, names.c_str(), nullptr, &fallbackSize, &attributes)) {
+		const DWORD lastError = GetLastError();
+		if (lastError != ERROR_OBJECT_NOT_FOUND && lastError != ERROR_FILE_NOT_FOUND) {
+			throw std::system_error(lastError, std::system_category(), "GetUILanguageInfo");
+		}
+		return false;
+	}
+	if ((attributes & MUI_LANGUAGE_INSTALLED) != MUI_LANGUAGE_INSTALLED) {
+		return false;
+	}
+	return true;
+}
+
+namespace internal {
 
 void LocaleSetter::SetUp(const std::string& locale) {
 	ULONG bufferSize = 0;
@@ -41,4 +63,6 @@ void LocaleSetter::TearDown() {
 	ASSERT_TRUE(SetThreadPreferredUILanguages(MUI_LANGUAGE_NAME, m_buffer.get(), &m_num));
 }
 
-}  // namespace m4t::internal
+}  // namespace internal
+
+}  // namespace m4t

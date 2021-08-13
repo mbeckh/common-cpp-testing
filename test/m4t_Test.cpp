@@ -54,20 +54,32 @@ TEST(m4t, AssertExpect) {
 	EXPECT_NOT_NULL(&value);
 }
 
-TEST(m4t, WithLocale) {
-	{
-		const std::string str = WithLocale("en-US", [] {
-			return std::system_category().message(ERROR_ACCESS_DENIED);
-		});
-		EXPECT_EQ("Access is denied.", str);
-	}
+TEST(m4t, HasLocale_EnglishUS_ReturnTrue) {
+	EXPECT_TRUE(HasLocale("en-US"));
+}
 
-	{
-		const std::string str = WithLocale("de-DE", [] {
-			return std::system_category().message(ERROR_ACCESS_DENIED);
-		});
-		EXPECT_EQ("Zugriff verweigert", str);
+TEST(m4t, HasLocale_Swahili_ReturnFalse) {
+	// sorry to all folks using a Swahili localization... :-)
+	EXPECT_FALSE(HasLocale("sw"));
+}
+
+TEST(m4t, WithLocale_EnglishUS_IsEnglish) {
+	const std::string str = WithLocale("en-US", [] {
+		return std::system_category().message(ERROR_ACCESS_DENIED);
+	});
+	EXPECT_EQ("Access is denied.", str);
+}
+
+TEST(m4t, WithLocale_GermanGermany_IsGerman) {
+	if (!HasLocale("de-DE")) {
+		// account for German not being available on GitHub hosted runners
+		GTEST_SKIP();
+		return;
 	}
+	const std::string str = WithLocale("de-DE", [] {
+		return std::system_category().message(ERROR_ACCESS_DENIED);
+	});
+	EXPECT_EQ("Zugriff verweigert", str);
 }
 
 TEST(m4t, ComMock) {

@@ -21,10 +21,10 @@ limitations under the License.
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <windows.h>
 #include <propidl.h>
 #include <propvarutil.h>
 #include <unknwn.h>
-#include <windows.h>
 #include <wtypes.h>
 
 #include <regex>
@@ -182,6 +182,9 @@ private:
 };
 
 }  // namespace internal
+
+/// @brief Check if a locale is installed.
+bool HasLocale(const std::string& locale);
 
 /// @brief Run some code in a thread using a user-defined locale.
 /// @tparam L The type of the closure.
