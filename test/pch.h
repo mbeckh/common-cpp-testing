@@ -20,6 +20,7 @@ limitations under the License.
 #include <gtest/gtest-spi.h>
 #include <gtest/gtest.h>
 
+#include <windows.h>
 #include <combaseapi.h>
 #include <oaidl.h>
 #include <objbase.h>
@@ -27,7 +28,6 @@ limitations under the License.
 #include <propidl.h>
 #include <propvarutil.h>
 #include <unknwn.h>
-#include <windows.h>
 #include <wtypes.h>
 
 #include <cstddef>

@@ -21,9 +21,9 @@ limitations under the License.
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <windows.h>
 #include <combaseapi.h>
 #include <objidl.h>
-#include <windows.h>
 #include <wtypes.h>
 
 namespace m4t::test {

@@ -18,10 +18,10 @@ limitations under the License.
 
 #include <gmock/gmock.h>
 
+#include <windows.h>
 #include <objbase.h>
 #include <objidl.h>
 #include <unknwn.h>
-#include <windows.h>
 
 #include <atomic>
 #include <cstddef>

@@ -22,10 +22,10 @@ limitations under the License.
 
 #include <gtest/gtest.h>
 
+#include <windows.h>
 #include <combaseapi.h>
 #include <oaidl.h>
 #include <unknwn.h>
-#include <windows.h>
 
 #include <cstddef>
 #include <cstdlib>

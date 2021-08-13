@@ -24,13 +24,13 @@ limitations under the License.
 #include <gtest/gtest-spi.h>  // IWYU pragma: keep
 #include <gtest/gtest.h>
 
+#include <windows.h>
 #include <combaseapi.h>
 #include <oaidl.h>
 #include <objidl.h>
 #include <propidl.h>
 #include <propvarutil.h>
 #include <unknwn.h>
-#include <windows.h>
 #include <wtypes.h>
 
 #include <cstdint>
