@@ -13,7 +13,7 @@
 # limitations under the License.
 cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
 
-project("common-cpp-testing" VERSION 0.0.2
+project("common-cpp-testing" VERSION 0.0.3
     DESCRIPTION "Common C++ library for testing"
     HOMEPAGE_URL "https://github.com/mbeckh/common-cpp-testing"
     LANGUAGES CXX)
