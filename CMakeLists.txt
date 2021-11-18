@@ -30,8 +30,8 @@ add_library(m4t
     "include/m4t/LogListener.h"
     "include/m4t/m4t.h"
     "include/m4t/MallocSpy.h"
- )
-add_library(m4t::m4t ALIAS m4t)
+    )
+add_library(common-cpp-testing::m4t ALIAS m4t)
 
 target_compile_definitions(m4t PRIVATE WIN32_LEAN_AND_MEAN=1 NOMINMAX=1)
 target_compile_features(m4t PUBLIC cxx_std_20)
@@ -46,13 +46,13 @@ set_target_properties(m4t PROPERTIES
 target_link_libraries(m4t PUBLIC GTest::gmock PRIVATE detours-gmock::detours-gmock propsys)
 
 include(CMakePackageConfigHelpers)
-configure_package_config_file("cmake/m4t-config.cmake.in" "m4t-config.cmake" INSTALL_DESTINATION "share/common-cpp-testing")
-write_basic_package_version_file("${PROJECT_BINARY_DIR}/m4t-config-version.cmake" VERSION ${m4t_VERSION} COMPATIBILITY SameMajorVersion)
+configure_package_config_file("cmake/common-cpp-testing-config.cmake.in" "common-cpp-testing-config.cmake" INSTALL_DESTINATION "share/common-cpp-testing")
+write_basic_package_version_file("${PROJECT_BINARY_DIR}/common-cpp-testing-config-version.cmake" VERSION ${common-cpp-testing_VERSION} COMPATIBILITY SameMajorVersion)
 
 install(TARGETS m4t EXPORT m4t-targets)
 install(DIRECTORY "include/m4t" TYPE INCLUDE)
-install(EXPORT m4t-targets DESTINATION "share/common-cpp-testing" NAMESPACE "m4t::")
-install(FILES "${PROJECT_BINARY_DIR}/m4t-config.cmake" "${PROJECT_BINARY_DIR}/m4t-config-version.cmake" DESTINATION "share/common-cpp-testing")
+install(EXPORT m4t-targets DESTINATION "share/common-cpp-testing" NAMESPACE "common-cpp-testing::")
+install(FILES "${PROJECT_BINARY_DIR}/common-cpp-testing-config.cmake" "${PROJECT_BINARY_DIR}/common-cpp-testing-config-version.cmake" DESTINATION "share/common-cpp-testing")
 
 if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
 	enable_testing()
@@ -73,7 +73,7 @@ if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
         CXX_STANDARD_REQUIRED ON
         CXX_EXTENSIONS OFF
     )
-    target_link_libraries(m4t_Test PRIVATE m4t::m4t GTest::gmock GTest::gmock_main)
+    target_link_libraries(m4t_Test PRIVATE common-cpp-testing::m4t GTest::gmock GTest::gmock_main)
 
     add_test(NAME m4t_Test_PASS COMMAND m4t_Test)
 endif()
