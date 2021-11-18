@@ -43,7 +43,7 @@ set_target_properties(m4t PROPERTIES
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF
 )
-target_link_libraries(m4t PUBLIC GTest::gmock PRIVATE detours::gmock propsys)
+target_link_libraries(m4t PUBLIC GTest::gmock PRIVATE detours-gmock::detours-gmock propsys)
 
 include(CMakePackageConfigHelpers)
 configure_package_config_file("cmake/m4t-config.cmake.in" "m4t-config.cmake" INSTALL_DESTINATION "share/m4t")
