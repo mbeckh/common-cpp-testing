@@ -22,8 +22,8 @@ limitations under the License.
 
 #include <windows.h>
 #include <combaseapi.h>
+#include <evntprov.h>
 #include <oaidl.h>
-#include <objbase.h>
 #include <objidl.h>
 #include <propidl.h>
 #include <propvarutil.h>
@@ -33,12 +33,14 @@ limitations under the License.
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <cstring>
-#include <cwchar>
-#include <new>
+#include <memory>
+#include <ostream>
 #include <regex>
 #include <shared_mutex>
+#include <string>
 #include <system_error>
 #include <tuple>
 #include <type_traits>
+#include <typeinfo>
 #include <unordered_set>
+#include <utility>

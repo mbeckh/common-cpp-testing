@@ -16,7 +16,7 @@ limitations under the License.
 
 /// @file
 
-#include "m4t/IStream_Mock.h"
+#include "m4t/IStreamMock.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -27,14 +27,15 @@ limitations under the License.
 #include <wtypes.h>
 
 namespace m4t::test {
+namespace {
 
 namespace t = testing;
 
-TEST(IStream_Mock, Stat) {
-	IStream_Mock mock;
+TEST(IStreamMock, Stat) {
+	IStreamMock mock;
 
 	EXPECT_CALL(mock, Stat(t::_, STATFLAG_DEFAULT))
-		.WillOnce(IStream_Stat(L"Test.txt"));
+	    .WillOnce(IStream_Stat(L"Test.txt"));
 
 	STATSTG stg;
 	ASSERT_HRESULT_SUCCEEDED(mock.Stat(&stg, STATFLAG_DEFAULT));
@@ -43,4 +44,5 @@ TEST(IStream_Mock, Stat) {
 	CoTaskMemFree(stg.pwcsName);
 }
 
+}  // namespace
 }  // namespace m4t::test

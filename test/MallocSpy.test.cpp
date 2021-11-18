@@ -31,6 +31,7 @@ limitations under the License.
 #include <cstdlib>
 
 namespace m4t::test {
+namespace {
 
 TEST(MallocSpy, QueryInterface) {
 	MallocSpy* const pMallocSpy = new MallocSpy();
@@ -45,9 +46,9 @@ TEST(MallocSpy, QueryInterface) {
 	IUnknown* pUnknown = kInvalidPtr<IUnknown>;
 	EXPECT_HRESULT_SUCCEEDED(pMallocSpy->QueryInterface(IID_PPV_ARGS(&pUnknown)));
 	ASSERT_EQ(pMallocSpy, pUnknown);
-	EXPECT_EQ(1u, pUnknown->Release());
+	EXPECT_EQ(1, pUnknown->Release());
 
-	EXPECT_EQ(0u, pMallocSpy->Release());
+	EXPECT_EQ(0, pMallocSpy->Release());
 }
 
 TEST(MallocSpy, AddRefRelease) {
@@ -66,27 +67,28 @@ TEST(MallocSpy, AddRefRelease) {
 
 	TrackingMallocSpy* const pMallocSpy = new TrackingMallocSpy();
 
-	EXPECT_EQ(2u, pMallocSpy->AddRef());
-	EXPECT_EQ(1u, pMallocSpy->Release());
+	EXPECT_EQ(2, pMallocSpy->AddRef());
+	EXPECT_EQ(1, pMallocSpy->Release());
 	EXPECT_FALSE(deleted);
 
-	EXPECT_EQ(0u, pMallocSpy->Release());
+	EXPECT_EQ(0, pMallocSpy->Release());
 
 	EXPECT_TRUE(deleted);
 }
 
 TEST(MallocSpy, AllocFree) {
+	// NOLINTBEGIN(clang-analyzer-cplusplus.NewDelete): Test allocation interface.
 	MallocSpy* const pMallocSpy = new MallocSpy();
 
 	int* ptr = nullptr;
 
-	EXPECT_EQ(0u, pMallocSpy->GetAllocatedCount());
-	EXPECT_EQ(0u, pMallocSpy->GetDeletedCount());
+	EXPECT_EQ(0, pMallocSpy->GetAllocatedCount());
+	EXPECT_EQ(0, pMallocSpy->GetDeletedCount());
 
 	EXPECT_EQ(sizeof(*ptr), pMallocSpy->PreAlloc(sizeof(*ptr)));
 
-	EXPECT_EQ(0u, pMallocSpy->GetAllocatedCount());
-	EXPECT_EQ(0u, pMallocSpy->GetDeletedCount());
+	EXPECT_EQ(0, pMallocSpy->GetAllocatedCount());
+	EXPECT_EQ(0, pMallocSpy->GetDeletedCount());
 
 	ptr = new int;
 
@@ -94,43 +96,45 @@ TEST(MallocSpy, AllocFree) {
 
 	EXPECT_TRUE(pMallocSpy->IsAllocated(ptr));
 	EXPECT_FALSE(pMallocSpy->IsDeleted(ptr));
-	EXPECT_EQ(1u, pMallocSpy->GetAllocatedCount());
-	EXPECT_EQ(0u, pMallocSpy->GetDeletedCount());
+	EXPECT_EQ(1, pMallocSpy->GetAllocatedCount());
+	EXPECT_EQ(0, pMallocSpy->GetDeletedCount());
 
 	EXPECT_EQ(ptr, pMallocSpy->PreFree(ptr, TRUE));
 
 	EXPECT_FALSE(pMallocSpy->IsAllocated(ptr));
 	EXPECT_TRUE(pMallocSpy->IsDeleted(ptr));
-	EXPECT_EQ(0u, pMallocSpy->GetAllocatedCount());
-	EXPECT_EQ(1u, pMallocSpy->GetDeletedCount());
+	EXPECT_EQ(0, pMallocSpy->GetAllocatedCount());
+	EXPECT_EQ(1, pMallocSpy->GetDeletedCount());
 
 	const int* const ptrValue = ptr;
 	delete ptr;
 
 	pMallocSpy->PostFree(TRUE);
 
-	EXPECT_FALSE(pMallocSpy->IsAllocated(ptrValue));  // NOLINT(clang-analyzer-cplusplus.NewDelete)
+	EXPECT_FALSE(pMallocSpy->IsAllocated(ptrValue));
 	EXPECT_TRUE(pMallocSpy->IsDeleted(ptrValue));
-	EXPECT_EQ(0u, pMallocSpy->GetAllocatedCount());
-	EXPECT_EQ(1u, pMallocSpy->GetDeletedCount());
+	EXPECT_EQ(0, pMallocSpy->GetAllocatedCount());
+	EXPECT_EQ(1, pMallocSpy->GetDeletedCount());
 
 	pMallocSpy->Release();
+	// NOLINTEND(clang-analyzer-cplusplus.NewDelete)
 }
 
 TEST(MallocSpy, Realloc) {
+	// NOLINTBEGIN(cppcoreguidelines-no-malloc, clang-analyzer-unix.Malloc): Test allocation interface.
 	MallocSpy* const pMallocSpy = new MallocSpy();
 
 	void* ptr = nullptr;
 	constexpr std::size_t kSize = 10;
 
 	EXPECT_EQ(kSize, pMallocSpy->PreAlloc(kSize));
-	ptr = std::malloc(kSize);  // NOLINT(cppcoreguidelines-no-malloc)
+	ptr = std::malloc(kSize);
 	EXPECT_EQ(ptr, pMallocSpy->PostAlloc(ptr));
 
 	EXPECT_TRUE(pMallocSpy->IsAllocated(ptr));
 	EXPECT_FALSE(pMallocSpy->IsDeleted(ptr));
-	EXPECT_EQ(1u, pMallocSpy->GetAllocatedCount());
-	EXPECT_EQ(0u, pMallocSpy->GetDeletedCount());
+	EXPECT_EQ(1, pMallocSpy->GetAllocatedCount());
+	EXPECT_EQ(0, pMallocSpy->GetDeletedCount());
 
 	void* ptrNew = nullptr;
 	EXPECT_EQ(kSize * 2, pMallocSpy->PreRealloc(ptr, kSize * 2, &ptrNew, TRUE));
@@ -138,36 +142,37 @@ TEST(MallocSpy, Realloc) {
 
 	EXPECT_FALSE(pMallocSpy->IsAllocated(ptr));
 	EXPECT_TRUE(pMallocSpy->IsDeleted(ptr));
-	EXPECT_EQ(0u, pMallocSpy->GetAllocatedCount());
-	EXPECT_EQ(1u, pMallocSpy->GetDeletedCount());
+	EXPECT_EQ(0, pMallocSpy->GetAllocatedCount());
+	EXPECT_EQ(1, pMallocSpy->GetDeletedCount());
 
-	ptrNew = std::realloc(ptrNew, kSize * 2);  // NOLINT(cppcoreguidelines-no-malloc)
+	ptrNew = std::realloc(ptrNew, kSize * 2);
 
 	EXPECT_EQ(ptrNew, pMallocSpy->PostRealloc(ptrNew, TRUE));
 
 	EXPECT_TRUE(pMallocSpy->IsAllocated(ptrNew));
 	EXPECT_FALSE(pMallocSpy->IsDeleted(ptrNew));
-	EXPECT_EQ(1u, pMallocSpy->GetAllocatedCount());
-	EXPECT_EQ(1u, pMallocSpy->GetDeletedCount());
+	EXPECT_EQ(1, pMallocSpy->GetAllocatedCount());
+	EXPECT_EQ(1, pMallocSpy->GetDeletedCount());
 
 	EXPECT_EQ(ptrNew, pMallocSpy->PreFree(ptrNew, TRUE));
 
 	EXPECT_FALSE(pMallocSpy->IsAllocated(ptrNew));
 	EXPECT_TRUE(pMallocSpy->IsDeleted(ptrNew));
-	EXPECT_EQ(0u, pMallocSpy->GetAllocatedCount());
-	EXPECT_EQ(2u, pMallocSpy->GetDeletedCount());
+	EXPECT_EQ(0, pMallocSpy->GetAllocatedCount());
+	EXPECT_EQ(2, pMallocSpy->GetDeletedCount());
 
 	void* ptrValue = ptrNew;
-	std::free(ptrNew);  // NOLINT(cppcoreguidelines-no-malloc)
+	std::free(ptrNew);
 
 	pMallocSpy->PostFree(TRUE);
 
-	EXPECT_FALSE(pMallocSpy->IsAllocated(ptrValue));  // NOLINT(clang-analyzer-unix.Malloc)
+	EXPECT_FALSE(pMallocSpy->IsAllocated(ptrValue));
 	EXPECT_TRUE(pMallocSpy->IsDeleted(ptrValue));
-	EXPECT_EQ(0u, pMallocSpy->GetAllocatedCount());
-	EXPECT_EQ(2u, pMallocSpy->GetDeletedCount());
+	EXPECT_EQ(0, pMallocSpy->GetAllocatedCount());
+	EXPECT_EQ(2, pMallocSpy->GetDeletedCount());
 
 	pMallocSpy->Release();
+	// NOLINTEND(cppcoreguidelines-no-malloc, clang-analyzer-unix.Malloc)
 }
 
 TEST(MallocSpy, GetSizeDidAllocHeapMinimize) {
@@ -189,4 +194,5 @@ TEST(MallocSpy, GetSizeDidAllocHeapMinimize) {
 	pMallocSpy->Release();
 }
 
+}  // namespace
 }  // namespace m4t::test

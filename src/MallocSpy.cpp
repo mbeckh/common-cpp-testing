@@ -20,6 +20,7 @@ limitations under the License.
 
 #include <unknwn.h>
 
+#include <cassert>
 #include <mutex>
 #include <shared_mutex>
 #include <unordered_set>
@@ -31,11 +32,13 @@ namespace m4t {
 //
 
 HRESULT MallocSpy::QueryInterface(REFIID riid, _COM_Outptr_ void** const ppObject) noexcept {
-	if (!ppObject) [[unlikely]] {
+	if (!ppObject) {
+		[[unlikely]];
 		return E_INVALIDARG;
 	}
 
-	if (IsEqualIID(riid, IID_IMallocSpy) || IsEqualIID(riid, IID_IUnknown)) [[likely]] {
+	if (IsEqualIID(riid, IID_IMallocSpy) || IsEqualIID(riid, IID_IUnknown)) {
+		[[likely]];
 		*ppObject = this;
 		static_cast<IUnknown*>(this)->AddRef();
 		return S_OK;
@@ -50,7 +53,7 @@ ULONG MallocSpy::AddRef() noexcept {
 
 ULONG MallocSpy::Release() noexcept {
 	const ULONG refCount = InterlockedDecrement(&m_refCount);
-	if (!refCount) [[unlikely]] {
+	if (!refCount) {
 		delete this;
 	}
 	return refCount;
@@ -70,8 +73,8 @@ void* __stdcall MallocSpy::PostAlloc(_In_ void* const pActual) noexcept {
 		std::scoped_lock lock(m_mutex);
 		m_allocated.insert(pActual);
 	} catch (...) {
-		// ignore
-		[[unlikely]];
+		// ignore, but assert
+		assert(false);
 	}
 
 	return pActual;
@@ -83,8 +86,8 @@ void* __stdcall MallocSpy::PreFree(_In_ void* const pRequest, _In_ const BOOL /*
 		m_allocated.erase(pRequest);
 		m_deleted.insert(pRequest);
 	} catch (...) {
-		// ignore
-		[[unlikely]];
+		// ignore, but assert
+		assert(false);
 	}
 
 	return pRequest;
@@ -100,11 +103,12 @@ SIZE_T __stdcall MallocSpy::PreRealloc(_In_ void* const pRequest, _In_ const SIZ
 		m_allocated.erase(pRequest);
 		m_deleted.insert(pRequest);
 	} catch (...) {
-		// ignore
-		[[unlikely]];
+		// ignore, but assert
+		assert(false);
 	}
 
-	if (ppNewRequest) [[likely]] {
+	if (ppNewRequest) {
+		[[likely]];
 		*ppNewRequest = pRequest;
 	}
 	return cbRequest;
@@ -115,8 +119,8 @@ void* __stdcall MallocSpy::PostRealloc(_In_ void* const pActual, _In_ BOOL /* fS
 		std::scoped_lock lock(m_mutex);
 		m_allocated.insert(pActual);
 	} catch (...) {
-		// ignore
-		[[unlikely]];
+		// ignore, but assert
+		assert(false);
 	}
 
 	return pActual;
