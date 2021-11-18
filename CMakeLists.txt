@@ -46,13 +46,13 @@ set_target_properties(m4t PROPERTIES
 target_link_libraries(m4t PUBLIC GTest::gmock PRIVATE detours-gmock::detours-gmock propsys)
 
 include(CMakePackageConfigHelpers)
-configure_package_config_file("cmake/m4t-config.cmake.in" "m4t-config.cmake" INSTALL_DESTINATION "share/m4t")
+configure_package_config_file("cmake/m4t-config.cmake.in" "m4t-config.cmake" INSTALL_DESTINATION "share/common-cpp-testing")
 write_basic_package_version_file("${PROJECT_BINARY_DIR}/m4t-config-version.cmake" VERSION ${m4t_VERSION} COMPATIBILITY SameMajorVersion)
 
 install(TARGETS m4t EXPORT m4t-targets)
 install(DIRECTORY "include/m4t" TYPE INCLUDE)
-install(EXPORT m4t-targets DESTINATION "share/m4t" NAMESPACE "m4t::")
-install(FILES "${PROJECT_BINARY_DIR}/m4t-config.cmake" "${PROJECT_BINARY_DIR}/m4t-config-version.cmake" DESTINATION "share/m4t")
+install(EXPORT m4t-targets DESTINATION "share/common-cpp-testing" NAMESPACE "m4t::")
+install(FILES "${PROJECT_BINARY_DIR}/m4t-config.cmake" "${PROJECT_BINARY_DIR}/m4t-config-version.cmake" DESTINATION "share/common-cpp-testing")
 
 if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
 	enable_testing()
