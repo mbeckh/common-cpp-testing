@@ -19,12 +19,15 @@ project("common-cpp-testing" VERSION 0.0.2
     LANGUAGES CXX)
 
 find_package(GTest REQUIRED)
+find_package(detours-gmock REQUIRED)
 
 add_library(m4t
-    "src/IStream_Mock.cpp"
-    "src/MallocSpy.cpp"
+    "src/IStreamMock.cpp"
+    "src/LogListener.cpp"
     "src/m4t.cpp"
-    "include/m4t/IStream_Mock.h"
+    "src/MallocSpy.cpp"
+    "include/m4t/IStreamMock.h"
+    "include/m4t/LogListener.h"
     "include/m4t/m4t.h"
     "include/m4t/MallocSpy.h"
  )
@@ -40,26 +43,25 @@ set_target_properties(m4t PROPERTIES
     CXX_STANDARD_REQUIRED ON
     CXX_EXTENSIONS OFF
 )
-target_link_libraries(m4t PUBLIC GTest::gmock propsys)
+target_link_libraries(m4t PUBLIC GTest::gmock PRIVATE detours::gmock propsys)
 
-if(PROJECT_IS_TOP_LEVEL)
-    include(CMakePackageConfigHelpers)
-    configure_package_config_file("cmake/m4t-config.cmake.in" "m4t-config.cmake" INSTALL_DESTINATION "share/m4t")
-    write_basic_package_version_file("${PROJECT_BINARY_DIR}/m4t-config-version.cmake" VERSION ${m4t_VERSION} COMPATIBILITY SameMajorVersion)
+include(CMakePackageConfigHelpers)
+configure_package_config_file("cmake/m4t-config.cmake.in" "m4t-config.cmake" INSTALL_DESTINATION "share/m4t")
+write_basic_package_version_file("${PROJECT_BINARY_DIR}/m4t-config-version.cmake" VERSION ${m4t_VERSION} COMPATIBILITY SameMajorVersion)
 
-    install(TARGETS m4t EXPORT m4t-targets)
-    install(DIRECTORY "include/m4t" TYPE INCLUDE)
-    install(EXPORT m4t-targets DESTINATION "share/m4t" NAMESPACE "m4t::")
-    install(FILES "${PROJECT_BINARY_DIR}/m4t-config.cmake" "${PROJECT_BINARY_DIR}/m4t-config-version.cmake" DESTINATION "share/m4t")
-endif()
+install(TARGETS m4t EXPORT m4t-targets)
+install(DIRECTORY "include/m4t" TYPE INCLUDE)
+install(EXPORT m4t-targets DESTINATION "share/m4t" NAMESPACE "m4t::")
+install(FILES "${PROJECT_BINARY_DIR}/m4t-config.cmake" "${PROJECT_BINARY_DIR}/m4t-config-version.cmake" DESTINATION "share/m4t")
 
-if(PROJECT_IS_TOP_LEVEL)
+if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTING)
 	enable_testing()
 
     add_executable(m4t_Test
-        "test/IStream_Mock_Test.cpp"
-        "test/m4t_Test.cpp"
-        "test/MallocSpy_Test.cpp"
+        "test/IStreamMock.test.cpp"
+        "test/LogListener.test.cpp"
+        "test/m4t.test.cpp"
+        "test/MallocSpy.test.cpp"
     )
 
     target_compile_definitions(m4t PRIVATE WIN32_LEAN_AND_MEAN=1 NOMINMAX=1)

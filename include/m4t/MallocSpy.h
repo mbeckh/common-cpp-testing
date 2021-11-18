@@ -18,8 +18,8 @@ limitations under the License.
 
 #pragma once
 
-#include <objidl.h>
 #include <windows.h>
+#include <objidl.h>
 
 #include <cstddef>
 #include <shared_mutex>

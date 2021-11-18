@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Michael Beckh
+Copyright 2019-2021 Michael Beckh
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,19 +17,34 @@ limitations under the License.
 #pragma once
 
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include <windows.h>
+#include <detours_gmock.h>
+#include <evntprov.h>
 #include <objbase.h>
 #include <objidl.h>
+#include <propidl.h>
+#include <propvarutil.h>
 #include <unknwn.h>
+#include <wtypes.h>
 
-#include <atomic>
+#include <algorithm>
+#include <cassert>
 #include <cstddef>
-#include <cstdlib>
+#include <cstdint>
 #include <cstring>
-#include <cwchar>
+#include <memory>
 #include <mutex>
 #include <new>
+#include <ostream>
+#include <regex>
 #include <shared_mutex>
+#include <stdexcept>
+#include <string>
+#include <system_error>
+#include <tuple>
 #include <type_traits>
+#include <typeinfo>
 #include <unordered_set>
+#include <utility>

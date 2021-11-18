@@ -18,7 +18,7 @@ limitations under the License.
 
 #include "m4t/m4t.h"
 
-#include "m4t/IStream_Mock.h"
+#include "m4t/IStreamMock.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest-spi.h>  // IWYU pragma: keep
@@ -35,8 +35,15 @@ limitations under the License.
 
 #include <cstdint>
 #include <regex>
+#include <string>
+#include <system_error>
 
 namespace m4t::test {
+namespace {
+
+//
+// Helpers
+//
 
 TEST(m4t, AssertExpect) {
 	static int value = 1;
@@ -53,6 +60,10 @@ TEST(m4t, AssertExpect) {
 	EXPECT_NONFATAL_FAILURE(EXPECT_NOT_NULL(nullptr), "(nullptr) !=");
 	EXPECT_NOT_NULL(&value);
 }
+
+//
+// Locale
+//
 
 TEST(m4t, HasLocale_EnglishUS_ReturnTrue) {
 	EXPECT_TRUE(HasLocale("en-US"));
@@ -82,17 +93,22 @@ TEST(m4t, WithLocale_GermanGermany_IsGerman) {
 	EXPECT_EQ("Zugriff verweigert", str);
 }
 
+
+//
+// COM Mock
+//
+
 TEST(m4t, ComMock) {
-	COM_MOCK_DECLARE(mock, IStream_Mock);
+	COM_MOCK_DECLARE(mock, IStreamMock);
 
 	COM_MOCK_SETUP(mock, IStream);
-	COM_MOCK_EXPECT_REFCOUNT(1u, mock);
+	COM_MOCK_EXPECT_REFCOUNT(1, mock);
 
-	EXPECT_EQ(2u, mock.AddRef());
-	COM_MOCK_EXPECT_REFCOUNT(2u, mock);
+	EXPECT_EQ(2, mock.AddRef());
+	COM_MOCK_EXPECT_REFCOUNT(2, mock);
 
-	EXPECT_EQ(1u, mock.Release());
-	COM_MOCK_EXPECT_REFCOUNT(1u, mock);
+	EXPECT_EQ(1, mock.Release());
+	COM_MOCK_EXPECT_REFCOUNT(1, mock);
 
 	IDispatch* pDispatch = nullptr;
 	EXPECT_EQ(E_NOINTERFACE, mock.QueryInterface(IID_PPV_ARGS(&pDispatch)));
@@ -100,21 +116,26 @@ TEST(m4t, ComMock) {
 	IStream* pStream = nullptr;
 	EXPECT_HRESULT_SUCCEEDED(mock.QueryInterface(IID_PPV_ARGS(&pStream)));
 	ASSERT_EQ(&mock, pStream);
-	COM_MOCK_EXPECT_REFCOUNT(2u, mock);
+	COM_MOCK_EXPECT_REFCOUNT(2, mock);
 
 	IUnknown* pUnknown = nullptr;
 	EXPECT_HRESULT_SUCCEEDED(mock.QueryInterface(IID_PPV_ARGS(&pUnknown)));
 	ASSERT_EQ(&mock, pUnknown);
-	COM_MOCK_EXPECT_REFCOUNT(3u, mock);
+	COM_MOCK_EXPECT_REFCOUNT(3, mock);
 
-	EXPECT_EQ(2u, pStream->Release());
-	COM_MOCK_EXPECT_REFCOUNT(2u, mock);
+	EXPECT_EQ(2, pStream->Release());
+	COM_MOCK_EXPECT_REFCOUNT(2, mock);
 
-	EXPECT_EQ(1u, pUnknown->Release());
-	COM_MOCK_EXPECT_REFCOUNT(1u, mock);
+	EXPECT_EQ(1, pUnknown->Release());
+	COM_MOCK_EXPECT_REFCOUNT(1, mock);
 
 	COM_MOCK_VERIFY(mock);
 }
+
+
+//
+// Matchers
+//
 
 TEST(m4t, BitsSet) {
 	EXPECT_THAT(4, BitsSet(4));
@@ -133,40 +154,97 @@ TEST(m4t, MatchesRegex) {
 
 	EXPECT_NONFATAL_FAILURE(EXPECT_THAT("abcd", MatchesRegex(std::regex("bc"))), "matches regex");
 	EXPECT_NONFATAL_FAILURE(EXPECT_THAT("abcd", MatchesRegex("bc")), "matches regex");
+	EXPECT_NONFATAL_FAILURE(EXPECT_THAT("abcd", MatchesRegex("^bc$")), "matches regex");
+}
+
+TEST(m4t, ContainsRegex) {
+	EXPECT_THAT("abcd", ContainsRegex(std::regex(".Bx?C.", std::regex::icase)));
+	EXPECT_THAT(L"abcd", ContainsRegex(std::wregex(L"^.Bx?C.$", std::regex::icase)));
+	EXPECT_THAT("abcd", ContainsRegex(".bx?c."));
+	EXPECT_THAT(L"abcd", ContainsRegex(L"^.bx?c.$"));
+
+	EXPECT_THAT("abcd", ContainsRegex(std::regex("bc")));
+	EXPECT_THAT("abcd", ContainsRegex("bc"));
+	EXPECT_NONFATAL_FAILURE(EXPECT_THAT("abcd", ContainsRegex("^bc$")), "contains regex");
+}
+
+TEST(m4t, PointerAs) {
+	const char sz[] = "Test Test Test";
+	const void* ptr = sz;
+	EXPECT_THAT(ptr, PointerAs<char>(t::StrEq("Test Test Test")));
+
+	EXPECT_NONFATAL_FAILURE(EXPECT_THAT(ptr, PointerAs<char>(t::StrEq("abcd"))), "is a pointer of type char* that");
+}
+
+TEST(m4t, PointeeAs) {
+	const char sz[] = "Test Test Test";
+	const void* ptr = sz;
+	EXPECT_THAT(ptr, PointeeAs<char>('T'));
+
+	EXPECT_NONFATAL_FAILURE(EXPECT_THAT(ptr, PointeeAs<char>('X')), "points to a value of type char that");
+}
+
+
+//
+// Actions
+//
+
+TEST(m4t, SetLastError) {
+	constexpr DWORD kErrorCode = 99u;
+
+	t::MockFunction<int()> function;
+	EXPECT_CALL(function, Call)
+	    .WillOnce(t::DoAll(m4t::SetLastError(kErrorCode), t::Return(-1)));
+
+	::SetLastError(0);
+	EXPECT_EQ(-1, function.Call());
+	EXPECT_EQ(kErrorCode, GetLastError());
+}
+
+TEST(m4t, SetLastErrorAndReturn) {
+	constexpr DWORD kErrorCode = 99;
+
+	t::MockFunction<int()> function;
+	EXPECT_CALL(function, Call)
+	    .WillOnce(SetLastErrorAndReturn(kErrorCode, -1));
+
+	::SetLastError(0);
+	EXPECT_EQ(-1, function.Call());
+	EXPECT_EQ(kErrorCode, GetLastError());
 }
 
 TEST(m4t, SetComObject) {
-	COM_MOCK_DECLARE(mock, IStream_Mock);
+	COM_MOCK_DECLARE(mock, IStreamMock);
 	COM_MOCK_SETUP(mock, IStream);
 
 	t::MockFunction<void(IUnknown**)> function;
-	EXPECT_CALL(function, Call(t::_))
-		.WillOnce(SetComObject<0>(&mock));
+	EXPECT_CALL(function, Call)
+	    .WillOnce(SetComObject<0>(&mock));
 
 	IUnknown* pUnknown = nullptr;
 	function.Call(&pUnknown);
 
 	ASSERT_EQ(&mock, pUnknown);
-	COM_MOCK_EXPECT_REFCOUNT(2u, mock);
+	COM_MOCK_EXPECT_REFCOUNT(2, mock);
 
 	pUnknown->Release();
 	COM_MOCK_VERIFY(mock);
 }
 
 TEST(m4t, SetPropVariant) {
-	constexpr std::uint32_t kUInt32Value = 75u;
+	constexpr std::uint32_t kUInt32Value = 75;
 
-	COM_MOCK_DECLARE(mock, IStream_Mock);
+	COM_MOCK_DECLARE(mock, IStreamMock);
 	COM_MOCK_SETUP(mock, IStream);
 
 	t::MockFunction<void(PROPVARIANT*, PROPVARIANT*, PROPVARIANT*, PROPVARIANT*, PROPVARIANT*)> function;
-	EXPECT_CALL(function, Call(t::_, t::_, t::_, t::_, t::_))
-		.WillOnce(t::DoAll(
-			SetPropVariantToBool<0>(VARIANT_TRUE),
-			SetPropVariantToBSTR<1>(L"Test"),
-			SetPropVariantToEmpty<2>(),
-			SetPropVariantToStream<3>(&mock),
-			SetPropVariantToUInt32<4>(kUInt32Value)));
+	EXPECT_CALL(function, Call)
+	    .WillOnce(t::DoAll(
+	        SetPropVariantToBool<0>(VARIANT_TRUE),
+	        SetPropVariantToBSTR<1>(L"Test"),
+	        SetPropVariantToEmpty<2>(),
+	        SetPropVariantToStream<3>(&mock),
+	        SetPropVariantToUInt32<4>(kUInt32Value)));
 
 	PROPVARIANT pvBool;
 	PROPVARIANT pvBstr;
@@ -192,7 +270,7 @@ TEST(m4t, SetPropVariant) {
 
 	EXPECT_EQ(VARENUM::VT_STREAM, pvStream.vt);
 	EXPECT_EQ(&mock, pvStream.pStream);
-	COM_MOCK_EXPECT_REFCOUNT(2u, mock);
+	COM_MOCK_EXPECT_REFCOUNT(2, mock);
 
 	EXPECT_EQ(VARENUM::VT_UI4, pvUInt32.vt);
 	EXPECT_EQ(kUInt32Value, pvUInt32.ulVal);
@@ -206,4 +284,5 @@ TEST(m4t, SetPropVariant) {
 	COM_MOCK_VERIFY(mock);
 }
 
+}  // namespace
 }  // namespace m4t::test

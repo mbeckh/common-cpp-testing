@@ -25,25 +25,6 @@ limitations under the License.
 
 namespace m4t {
 
-bool HasLocale(const std::string& locale) {
-	std::wstring names(locale.cbegin(), locale.cend());
-	names.push_back(L'\0');
-
-	DWORD fallbackSize = 0;
-	DWORD attributes = 0;
-	if (!GetUILanguageInfo(MUI_LANGUAGE_NAME, names.c_str(), nullptr, &fallbackSize, &attributes)) {
-		const DWORD lastError = GetLastError();
-		if (lastError != ERROR_OBJECT_NOT_FOUND && lastError != ERROR_FILE_NOT_FOUND) {
-			throw std::system_error(lastError, std::system_category(), "GetUILanguageInfo");
-		}
-		return false;
-	}
-	if ((attributes & MUI_LANGUAGE_INSTALLED) != MUI_LANGUAGE_INSTALLED) {
-		return false;
-	}
-	return true;
-}
-
 namespace internal {
 
 void LocaleSetter::SetUp(const std::string& locale) {
@@ -65,4 +46,25 @@ void LocaleSetter::TearDown() {
 
 }  // namespace internal
 
+
+bool HasLocale(const std::string& locale) {
+	std::wstring names(locale.cbegin(), locale.cend());
+	names.push_back(L'\0');
+
+	DWORD fallbackSize = 0;
+	DWORD attributes = 0;
+	if (!GetUILanguageInfo(MUI_LANGUAGE_NAME, names.c_str(), nullptr, &fallbackSize, &attributes)) {
+		const DWORD lastError = GetLastError();
+		if (lastError != ERROR_OBJECT_NOT_FOUND && lastError != ERROR_FILE_NOT_FOUND) {
+			throw std::system_error(static_cast<int>(lastError), std::system_category(), "GetUILanguageInfo");
+		}
+		return false;
+	}
+	return (attributes & MUI_LANGUAGE_INSTALLED) == MUI_LANGUAGE_INSTALLED;
+}
+
 }  // namespace m4t
+
+void __asan_on_error() {  // NOLINT(readability-identifier-naming): Name required by ASAN.
+	FAIL() << "Encountered an address sanitizer error";
+}
