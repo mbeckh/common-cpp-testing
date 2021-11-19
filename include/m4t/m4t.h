@@ -69,25 +69,20 @@ int __asan_address_is_poisoned(void const volatile* addr);
 #define EXPECT_UNINITIALIZED(p_) __pragma(warning(suppress : 6001)) EXPECT_EQ(0xCDCDCDCD, *std::bit_cast<std::uint32_t*>((p_)))
 
 /// @brief Generates a failure if @p p_ is not deleted memory.
-/// @warning This macro requires ASan AddressSanitizer, else it is a no-op.
+/// @warning This macro requires ASan AddressSanitizer, else it is a simple not-null check.
 /// @param p_ The pointer to check.
 #define EXPECT_DELETED(p_) EXPECT_EQ(1, __asan_address_is_poisoned((p_)))
 
-#elif defined(__clang_analyzer__)
+#elif defined(__clang_analyzer__) || (defined(NDEBUG) && NDEBUG) || !defined(_DEBUG) || !_DEBUG
 
 /// @brief Generates a failure if @p p_ is not uninitialized memory.
 /// @param p_ The pointer to check. It MUST point to at least 4 valid bytes of memory.
 #define EXPECT_UNINITIALIZED(p_) EXPECT_NOT_NULL(p_)
 
 /// @brief Generates a failure if @p p_ is not deleted memory.
-/// @warning This macro requires ASan AddressSanitizer, else it is a no-op.
+/// @warning This macro requires ASan AddressSanitizer, else it is a simple not-null check.
 /// @param p_ The pointer to check.
 #define EXPECT_DELETED(p_) EXPECT_NOT_NULL(p_)
-
-#elif defined(__clang_analyzer__)
-
-#define EXPECT_UNINITIALIZED(p_) (void) (p_)
-#define EXPECT_DELETED(p_) (void) (p_)
 
 #else
 
