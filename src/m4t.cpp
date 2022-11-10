@@ -42,13 +42,26 @@ namespace {
 /// @brief Workaround for https://github.com/microsoft/STL/issues/2882.
 class GetLocaleInfoExDetour {
 public:
-	GetLocaleInfoExDetour(const std::string& locale)
-	    : m_locale(locale) {
+	explicit GetLocaleInfoExDetour(std::string locale)
+	    : m_locale(std::move(locale)) {
 		SetUp();
 	}
 
-	const std::string& GetLocale() const noexcept {
-		return m_locale;
+public:
+	static void SetLocale(const std::string& locale) {
+		std::scoped_lock lock(m_detourMutex);
+		if (m_detourRefCount++ == 0) {
+			m_detour = std::make_unique<GetLocaleInfoExDetour>(locale);
+		} else {
+			ASSERT_EQ(m_detour->m_locale, locale);
+		}
+	}
+
+	static void Release() {
+		std::scoped_lock lock(m_detourMutex);
+		if (--m_detourRefCount == 0) {
+			m_detour.reset();
+		}
 	}
 
 private:
@@ -73,13 +86,14 @@ private:
 	}
 
 private:
+	static inline std::recursive_mutex m_detourMutex;
+	static inline std::unique_ptr<GetLocaleInfoExDetour> m_detour;
+	static inline int m_detourRefCount = 0;
+
+private:
 	DTGM_API_MOCK(m_mock, WIN32_FUNCTIONS);
 	const std::string m_locale;
 };
-
-std::recursive_mutex g_detourMutex;
-int g_detourRefCount = 0;
-std::unique_ptr<GetLocaleInfoExDetour> g_detour;
 
 }  // namespace
 
@@ -95,20 +109,11 @@ void LocaleSetter::SetUp(const std::string& locale) {
 	ULONG num = 1;
 	ASSERT_TRUE(SetThreadPreferredUILanguages(MUI_LANGUAGE_NAME, names.c_str(), &num));
 
-	std::scoped_lock lock(g_detourMutex);
-	if (g_detourRefCount++ == 0) {
-		g_detour = std::make_unique<GetLocaleInfoExDetour>(locale);
-	} else {
-		ASSERT_EQ(g_detour->GetLocale(), locale);
-	}
+	GetLocaleInfoExDetour::SetLocale(locale);
 }
 
 void LocaleSetter::TearDown() {
-	std::scoped_lock lock(g_detourMutex);
-	if (--g_detourRefCount == 0) {
-		g_detour.reset();
-	}
-
+	GetLocaleInfoExDetour::Release();
 	ASSERT_TRUE(SetThreadPreferredUILanguages(MUI_LANGUAGE_NAME, m_buffer.get(), &m_num));
 }
 
