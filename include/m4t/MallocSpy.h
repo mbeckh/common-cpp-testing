@@ -31,7 +31,7 @@ namespace m4t {
 /// @brief Implementation of `IMallocSpy` for use in testing.
 class MallocSpy : public IMallocSpy {
 public:
-	MallocSpy() noexcept = default;
+	MallocSpy() = default;
 	MallocSpy(const MallocSpy&) = delete;
 	MallocSpy(MallocSpy&&) = delete;
 	// allow creation on the stack

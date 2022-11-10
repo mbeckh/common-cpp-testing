@@ -170,7 +170,7 @@ MATCHER_P(MatchesRegex, pattern, "") {
 	} else if constexpr (std::is_constructible_v<std::wregex, pattern_type>) {
 		return std::regex_match(arg, std::wregex(pattern));
 	} else {
-		static_assert(!sizeof(pattern_type));
+		static_assert(sizeof(pattern_type) == 0);
 	}
 }
 
@@ -186,7 +186,7 @@ MATCHER_P(ContainsRegex, pattern, "") {
 	} else if constexpr (std::is_constructible_v<std::wregex, pattern_type>) {
 		return std::regex_search(arg, std::wregex(pattern));
 	} else {
-		static_assert(!sizeof(pattern_type));
+		static_assert(sizeof(pattern_type) == 0);
 	}
 }
 

@@ -49,18 +49,20 @@ public:
 
 public:
 	static void SetLocale(const std::string& locale) {
-		std::scoped_lock lock(m_detourMutex);
-		if (m_detourRefCount++ == 0) {
-			m_detour = std::make_unique<GetLocaleInfoExDetour>(locale);
+		std::scoped_lock lock(s_detourMutex);
+		if (s_detourRefCount == 0) {
+			s_detour = std::make_unique<GetLocaleInfoExDetour>(locale);
 		} else {
-			ASSERT_EQ(m_detour->m_locale, locale);
+			ASSERT_EQ(s_detour->m_locale, locale);
 		}
+		++s_detourRefCount;
 	}
 
 	static void Release() {
-		std::scoped_lock lock(m_detourMutex);
-		if (--m_detourRefCount == 0) {
-			m_detour.reset();
+		std::scoped_lock lock(s_detourMutex);
+		--s_detourRefCount;
+		if (s_detourRefCount == 0) {
+			s_detour.reset();
 		}
 	}
 
@@ -86,9 +88,9 @@ private:
 	}
 
 private:
-	static inline std::recursive_mutex m_detourMutex;
-	static inline std::unique_ptr<GetLocaleInfoExDetour> m_detour;
-	static inline int m_detourRefCount = 0;
+	static inline std::recursive_mutex s_detourMutex;
+	static inline std::unique_ptr<GetLocaleInfoExDetour> s_detour;
+	static inline int s_detourRefCount = 0;
 
 private:
 	DTGM_API_MOCK(m_mock, WIN32_FUNCTIONS);
