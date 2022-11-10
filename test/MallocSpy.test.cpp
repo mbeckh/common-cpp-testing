@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Michael Beckh
+Copyright 2021-2022 Michael Beckh
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -146,11 +146,12 @@ TEST(MallocSpy, Realloc) {
 	EXPECT_EQ(1, pMallocSpy->GetDeletedCount());
 
 	ptrNew = std::realloc(ptrNew, kSize * 2);
+	// ptrNew might still equal ptr
 
 	EXPECT_EQ(ptrNew, pMallocSpy->PostRealloc(ptrNew, TRUE));
 
 	EXPECT_TRUE(pMallocSpy->IsAllocated(ptrNew));
-	EXPECT_FALSE(pMallocSpy->IsDeleted(ptrNew));
+	EXPECT_EQ(ptr == ptrNew, pMallocSpy->IsDeleted(ptrNew));  // read as: deleted and newly allocated
 	EXPECT_EQ(1, pMallocSpy->GetAllocatedCount());
 	EXPECT_EQ(1, pMallocSpy->GetDeletedCount());
 
