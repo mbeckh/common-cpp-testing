@@ -70,7 +70,7 @@ private:
 	void SetUp() {
 		const std::wstring name(m_locale.cbegin(), m_locale.cend());
 		const LCID lcid = LocaleNameToLCID(name.c_str(), 0);
-		ASSERT_NE(0, lcid);
+		ASSERT_NE(static_cast<LCID>(0), lcid);
 
 		const DWORD langId = LANGIDFROMLCID(lcid);
 
