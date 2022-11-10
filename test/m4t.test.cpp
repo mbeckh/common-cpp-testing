@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Michael Beckh
+Copyright 2021-2022 Michael Beckh
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -75,10 +75,16 @@ TEST(m4t, HasLocale_Swahili_ReturnFalse) {
 }
 
 TEST(m4t, WithLocale_EnglishUS_IsEnglish) {
-	const std::string str = WithLocale("en-US", [] {
+	constexpr auto kLambda = [] {
 		return std::system_category().message(ERROR_ACCESS_DENIED);
-	});
+	};
+	const std::string withDefaultLanguage = kLambda();
+
+	const std::string str = WithLocale("en-US", kLambda);
 	EXPECT_EQ("Access is denied.", str);
+
+	// check that default is in effect after change
+	EXPECT_EQ(withDefaultLanguage, kLambda());
 }
 
 TEST(m4t, WithLocale_GermanGermany_IsGerman) {
@@ -87,12 +93,18 @@ TEST(m4t, WithLocale_GermanGermany_IsGerman) {
 		GTEST_SKIP();
 		return;
 	}
-	const std::string str = WithLocale("de-DE", [] {
-		return std::system_category().message(ERROR_ACCESS_DENIED);
-	});
-	EXPECT_EQ("Zugriff verweigert", str);
-}
 
+	constexpr auto kLambda = [] {
+		return std::system_category().message(ERROR_ACCESS_DENIED);
+	};
+	const std::string withDefaultLanguage = kLambda();
+
+	const std::string str = WithLocale("de-DE", kLambda);
+	EXPECT_EQ("Zugriff verweigert", str);
+
+	// check that default is in effect after change
+	EXPECT_EQ(withDefaultLanguage, kLambda());
+}
 
 //
 // COM Mock
