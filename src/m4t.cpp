@@ -1,5 +1,5 @@
 /*
-Copyright 2021 Michael Beckh
+Copyright 2021-2022 Michael Beckh
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,13 +19,85 @@ limitations under the License.
 #include "m4t/m4t.h"
 
 #include <windows.h>
+#include <detours_gmock.h>
 
+#include <memory>
+#include <mutex>
 #include <string>
 #include <system_error>
 
 namespace m4t {
 
 namespace internal {
+
+namespace {
+
+#undef WIN32_FUNCTIONS
+#define WIN32_FUNCTIONS(fn_)                                                 \
+	fn_(4, int, WINAPI, GetLocaleInfoEx,                                     \
+	    (LPCWSTR lpLocaleName, LCTYPE LCType, LPWSTR lpLCData, int cchData), \
+	    (lpLocaleName, LCType, lpLCData, cchData),                           \
+	    nullptr)
+
+/// @brief Workaround for https://github.com/microsoft/STL/issues/2882.
+class GetLocaleInfoExDetour {
+public:
+	explicit GetLocaleInfoExDetour(std::string locale)
+	    : m_locale(std::move(locale)) {
+		SetUp();
+	}
+
+public:
+	static void SetLocale(const std::string& locale) {
+		std::scoped_lock lock(s_detourMutex);
+		if (s_detourRefCount == 0) {
+			s_detour = std::make_unique<GetLocaleInfoExDetour>(locale);
+		} else {
+			ASSERT_EQ(s_detour->m_locale, locale);
+		}
+		++s_detourRefCount;
+	}
+
+	static void Release() {
+		std::scoped_lock lock(s_detourMutex);
+		--s_detourRefCount;
+		if (s_detourRefCount == 0) {
+			s_detour.reset();
+		}
+	}
+
+private:
+	void SetUp() {
+		const std::wstring name(m_locale.cbegin(), m_locale.cend());
+		const LCID lcid = LocaleNameToLCID(name.c_str(), 0);
+		ASSERT_NE(0, lcid);
+
+		const DWORD langId = LANGIDFROMLCID(lcid);
+
+		constexpr LPCWSTR kName = LOCALE_NAME_SYSTEM_DEFAULT;
+		constexpr LCTYPE kFlags = LOCALE_ILANGUAGE | LOCALE_RETURN_NUMBER;
+		constexpr int kSize = sizeof(DWORD) / sizeof(wchar_t);
+
+		ON_CALL(m_mock, GetLocaleInfoEx(kName, kFlags, t::_, kSize))
+		    .WillByDefault([langId](LPCWSTR, LCTYPE, LPWSTR lpLCData, int) {
+			    std::memcpy(lpLCData, &langId, sizeof(langId));
+			    return kSize;
+		    });
+		EXPECT_CALL(m_mock, GetLocaleInfoEx(kName, kFlags, t::_, kSize))
+		    .Times(t::AnyNumber());
+	}
+
+private:
+	static inline std::recursive_mutex s_detourMutex;
+	static inline std::unique_ptr<GetLocaleInfoExDetour> s_detour;
+	static inline int s_detourRefCount = 0;
+
+private:
+	DTGM_API_MOCK(m_mock, WIN32_FUNCTIONS);
+	const std::string m_locale;
+};
+
+}  // namespace
 
 void LocaleSetter::SetUp(const std::string& locale) {
 	ULONG bufferSize = 0;
@@ -38,9 +110,12 @@ void LocaleSetter::SetUp(const std::string& locale) {
 	names.push_back(L'\0');
 	ULONG num = 1;
 	ASSERT_TRUE(SetThreadPreferredUILanguages(MUI_LANGUAGE_NAME, names.c_str(), &num));
+
+	GetLocaleInfoExDetour::SetLocale(locale);
 }
 
 void LocaleSetter::TearDown() {
+	GetLocaleInfoExDetour::Release();
 	ASSERT_TRUE(SetThreadPreferredUILanguages(MUI_LANGUAGE_NAME, m_buffer.get(), &m_num));
 }
 

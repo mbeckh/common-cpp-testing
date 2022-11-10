@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Michael Beckh
+Copyright 2019-2022 Michael Beckh
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ limitations under the License.
 #include <objidl.h>
 
 #include <cstddef>
+#include <set>
 #include <shared_mutex>
 #include <unordered_set>
 
@@ -30,7 +31,7 @@ namespace m4t {
 /// @brief Implementation of `IMallocSpy` for use in testing.
 class MallocSpy : public IMallocSpy {
 public:
-	MallocSpy() noexcept = default;
+	MallocSpy() = default;
 	MallocSpy(const MallocSpy&) = delete;
 	MallocSpy(MallocSpy&&) = delete;
 	// allow creation on the stack
@@ -68,8 +69,8 @@ public:  // MallocSpy
 private:
 	volatile ULONG m_refCount = 1;  ///< @brief The COM reference count of this object.
 	mutable std::shared_mutex m_mutex;
-	std::unordered_set<const void*> m_allocated;
-	std::unordered_set<const void*> m_deleted;
+	std::unordered_set<const void*> m_allocated;  ///< @brief Currently allocated memory blocks.
+	std::multiset<const void*> m_deleted;         ///< @brief All memory blocks that have ever been deleted.
 };
 
 }  // namespace m4t

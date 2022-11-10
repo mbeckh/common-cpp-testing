@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Michael Beckh
+Copyright 2019-2022 Michael Beckh
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -170,9 +170,7 @@ MATCHER_P(MatchesRegex, pattern, "") {
 	} else if constexpr (std::is_constructible_v<std::wregex, pattern_type>) {
 		return std::regex_match(arg, std::wregex(pattern));
 	} else {
-#ifndef __clang_analyzer__
-		static_assert(false);
-#endif
+		static_assert(sizeof(pattern_type) == 0);
 	}
 }
 
@@ -188,9 +186,7 @@ MATCHER_P(ContainsRegex, pattern, "") {
 	} else if constexpr (std::is_constructible_v<std::wregex, pattern_type>) {
 		return std::regex_search(arg, std::wregex(pattern));
 	} else {
-#ifndef __clang_analyzer__
-		static_assert(false);
-#endif
+		static_assert(sizeof(pattern_type) == 0);
 	}
 }
 
