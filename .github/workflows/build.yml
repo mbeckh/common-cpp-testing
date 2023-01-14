@@ -6,7 +6,16 @@ on:
   pull_request:
     branches: [ master ]
 
+permissions: {}
+
 jobs:
   build:
+    name: Build
     uses: mbeckh/cmake-utils/.github/workflows/run-build.yml@v1
+    with:
+      pch: false
     secrets: inherit
+    permissions:
+      actions: write
+      contents: read
+      packages: write
