@@ -47,9 +47,15 @@ public:
 		SetUp();
 	}
 
+private:
+	static std::recursive_mutex& GetDetourMutex() {
+		static std::recursive_mutex detourMutex;
+		return detourMutex;
+	}
+
 public:
 	static void SetLocale(const std::string& locale) {
-		std::scoped_lock lock(s_detourMutex);
+		const std::scoped_lock lock(GetDetourMutex());
 		if (s_detourRefCount == 0) {
 			s_detour = std::make_unique<GetLocaleInfoExDetour>(locale);
 		} else {
@@ -59,7 +65,7 @@ public:
 	}
 
 	static void Release() {
-		std::scoped_lock lock(s_detourMutex);
+		const std::scoped_lock lock(GetDetourMutex());
 		--s_detourRefCount;
 		if (s_detourRefCount == 0) {
 			s_detour.reset();
@@ -88,7 +94,6 @@ private:
 	}
 
 private:
-	static inline std::recursive_mutex s_detourMutex;
 	static inline std::unique_ptr<GetLocaleInfoExDetour> s_detour;
 	static inline int s_detourRefCount = 0;
 

@@ -129,6 +129,7 @@ TEST(MallocSpy, Realloc) {
 
 	EXPECT_EQ(kSize, pMallocSpy->PreAlloc(kSize));
 	ptr = std::malloc(kSize);
+	EXPECT_NOT_NULL(ptr);
 	EXPECT_EQ(ptr, pMallocSpy->PostAlloc(ptr));
 
 	EXPECT_TRUE(pMallocSpy->IsAllocated(ptr));
@@ -145,7 +146,9 @@ TEST(MallocSpy, Realloc) {
 	EXPECT_EQ(0, pMallocSpy->GetAllocatedCount());
 	EXPECT_EQ(1, pMallocSpy->GetDeletedCount());
 
-	ptrNew = std::realloc(ptrNew, kSize * 2);
+	void* const ptrReallocated = std::realloc(ptrNew, kSize * 2);
+	EXPECT_NOT_NULL(ptrReallocated);
+	ptrNew = ptrReallocated;
 	// ptrNew might still equal ptr
 
 	EXPECT_EQ(ptrNew, pMallocSpy->PostRealloc(ptrNew, TRUE));
@@ -162,7 +165,7 @@ TEST(MallocSpy, Realloc) {
 	EXPECT_EQ(0, pMallocSpy->GetAllocatedCount());
 	EXPECT_EQ(2, pMallocSpy->GetDeletedCount());
 
-	void* ptrValue = ptrNew;
+	void* const ptrValue = ptrNew;
 	std::free(ptrNew);
 
 	pMallocSpy->PostFree(TRUE);

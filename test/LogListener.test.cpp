@@ -34,7 +34,7 @@ namespace {
 namespace t = testing;
 
 TEST(LogListener, NoLogging) {
-	LogListener log;
+	const LogListener log;
 
 	EXPECT_CALL(log, Debug).Times(0);
 	EXPECT_CALL(log, Event).Times(0);
@@ -42,7 +42,7 @@ TEST(LogListener, NoLogging) {
 }
 
 TEST(LogListener, Debug_Causes0) {
-	LogListener log;
+	const LogListener log;
 
 	EXPECT_CALL(log, Debug).Times(0);
 	EXPECT_CALL(log, Debug("MyLevel", "MyMessage"));
@@ -53,9 +53,9 @@ TEST(LogListener, Debug_Causes0) {
 }
 
 TEST(LogListener, Debug_Causes1) {
-	LogListener log;
+	const LogListener log;
 
-	t::InSequence s;
+	const t::InSequence s;
 	EXPECT_CALL(log, Debug).Times(0);
 	EXPECT_CALL(log, Debug("MyLevel", "MyCause"));
 	EXPECT_CALL(log, Debug("MyLevel", "MyMessage"));
@@ -66,9 +66,9 @@ TEST(LogListener, Debug_Causes1) {
 }
 
 TEST(LogListener, Debug_Causes2) {
-	LogListener log;
+	const LogListener log;
 
-	t::InSequence s;
+	const t::InSequence s;
 	EXPECT_CALL(log, Debug).Times(0);
 	EXPECT_CALL(log, Debug("MyLevel", "MyRootCause"));
 	EXPECT_CALL(log, Debug("MyLevel", "MyCause"));
@@ -82,7 +82,7 @@ TEST(LogListener, Debug_Causes2) {
 TEST(LogListener, Event_Data0) {
 	constexpr char kFile[] = "file.cpp";
 	constexpr std::uint32_t kLine = 99;
-	LogListener log;
+	const LogListener log;
 
 	EXPECT_CALL(log, Debug).Times(0);
 	EXPECT_CALL(log, Event).Times(0);
@@ -169,13 +169,13 @@ TEST(LogListener, Debug_StrictEventAndNotExpected_Ok) {
 }
 
 TEST(LogListener, Debug_StrictDebugAndNotExpected_Error) {
-	LogListener log(LogListenerMode::kStrictDebug);
+	const LogListener log(LogListenerMode::kStrictDebug);
 
 	EXPECT_NONFATAL_FAILURE(OutputDebugStringA("[MyLevel] [1234] MyMessage\n\tat file.cpp(99) (MyFunction)\n"), "called more times");
 }
 
 TEST(LogListener, Debug_StrictAllAndNotExpected_Error) {
-	LogListener log(LogListenerMode::kStrictAll);
+	const LogListener log(LogListenerMode::kStrictAll);
 
 	EXPECT_NONFATAL_FAILURE(OutputDebugStringA("[MyLevel] [1234] MyMessage\n\tat file.cpp(99) (MyFunction)\n"), "called more times");
 }

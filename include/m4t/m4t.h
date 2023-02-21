@@ -338,7 +338,7 @@ constexpr auto SetLastErrorAndReturn(const DWORD lastError, T&& value) noexcept 
 /// @brief Action for mocking `IUnknown::AddRef`.
 /// @param refCount A reference to the variable holding the COM reference count.
 constexpr auto AddRef(ULONG& refCount) noexcept {
-	return [&refCount]() constexpr noexcept->ULONG {
+	return [&refCount]() constexpr noexcept -> ULONG {
 		return ++refCount;
 	};
 }
@@ -346,7 +346,7 @@ constexpr auto AddRef(ULONG& refCount) noexcept {
 /// @brief Action for mocking `IUnknown::Release`.
 /// @param refCount A reference to the variable holding the COM reference count.
 constexpr auto Release(ULONG& refCount) noexcept {
-	return [&refCount]() constexpr noexcept->ULONG {
+	return [&refCount]() constexpr noexcept -> ULONG {
 		return --refCount;
 	};
 }
@@ -366,7 +366,7 @@ constexpr auto QueryInterface(T* const pObject) noexcept {
 /// @brief Action for mocking `IUnknown::QueryInterface` returning a failure.
 /// @details Always returns `E_NOINTERFACE` and sets the pointer to `nullptr`.
 constexpr auto QueryInterfaceFail() noexcept {
-	return [](REFIID, void** ppv) constexpr noexcept->HRESULT {
+	return [](REFIID, void** ppv) constexpr noexcept -> HRESULT {
 		*ppv = nullptr;
 		return E_NOINTERFACE;
 	};
@@ -403,7 +403,7 @@ inline void SetupComMock(M& mock, ULONG& refCount) {
 /// @param pObject A pointer to a COM object.
 template <std::size_t kIndex, std::derived_from<IUnknown> T>
 constexpr auto SetComObject(T* const pObject) {
-	return [pObject](auto&&... args) constexpr noexcept->void {
+	return [pObject](auto&&... args) constexpr -> void {
 		*std::get<kIndex>(std::make_tuple<decltype(args)...>(std::forward<decltype(args)>(args)...)) = pObject;
 		pObject->AddRef();
 	};
@@ -415,7 +415,7 @@ constexpr auto SetComObject(T* const pObject) {
 /// @param variantBool A `VARIANT_BOOL`.
 template <std::size_t kIndex>
 constexpr auto SetPropVariantToBool(const VARIANT_BOOL variantBool) noexcept {
-	return [variantBool](auto&&... args) constexpr noexcept->void {
+	return [variantBool](auto&&... args) constexpr noexcept -> void {
 		PROPVARIANT* const ppv = std::get<kIndex>(std::make_tuple<decltype(args)...>(std::forward<decltype(args)>(args)...));
 		ppv->boolVal = variantBool;
 		ppv->vt = VT_BOOL;
@@ -427,7 +427,7 @@ constexpr auto SetPropVariantToBool(const VARIANT_BOOL variantBool) noexcept {
 /// @tparam kIndex 0-based index of the argument.
 /// @param wsz A wide character string.
 template <std::size_t kIndex>
-constexpr auto SetPropVariantToBSTR(const wchar_t* const wsz) noexcept {
+constexpr auto SetPropVariantToBSTR(const wchar_t* const wsz) {
 	return [wsz](auto&&... args) -> void {
 		PROPVARIANT* const ppv = std::get<kIndex>(std::make_tuple<decltype(args)...>(std::forward<decltype(args)>(args)...));
 		PROPVARIANT pv;
@@ -448,7 +448,7 @@ constexpr auto SetPropVariantToBSTR(const wchar_t* const wsz) noexcept {
 /// @details Usage: `SetPropVariantToEmpty<1>()`. The `PROPVARIANT` MUST NOT be null.
 /// @tparam kIndex 0-based index of the argument.
 template <std::size_t kIndex>
-constexpr auto SetPropVariantToEmpty() noexcept {
+constexpr auto SetPropVariantToEmpty() {
 	return [](auto&&... args) -> void {
 		PROPVARIANT* const ppv = std::get<kIndex>(std::make_tuple<decltype(args)...>(std::forward<decltype(args)>(args)...));
 		const HRESULT hr = PropVariantClear(ppv);
@@ -479,7 +479,7 @@ constexpr auto SetPropVariantToStream(IStream* const pStream) noexcept {
 /// @param value An unsigned integer value.
 template <std::size_t kIndex>
 constexpr auto SetPropVariantToUInt32(const ULONG value) noexcept {
-	return [value](auto&&... args) constexpr noexcept->void {
+	return [value](auto&&... args) constexpr noexcept -> void {
 		PROPVARIANT* const ppv = std::get<kIndex>(std::make_tuple<decltype(args)...>(std::forward<decltype(args)>(args)...));
 		ppv->ulVal = value;
 		ppv->vt = VARENUM::VT_UI4;

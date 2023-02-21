@@ -182,7 +182,7 @@ TEST(m4t, ContainsRegex) {
 
 TEST(m4t, PointerAs) {
 	const char sz[] = "Test Test Test";
-	const void* ptr = sz;
+	const void* const ptr = sz;
 	EXPECT_THAT(ptr, PointerAs<char>(t::StrEq("Test Test Test")));
 
 	EXPECT_NONFATAL_FAILURE(EXPECT_THAT(ptr, PointerAs<char>(t::StrEq("abcd"))), "is a pointer of type char* that");
@@ -190,7 +190,7 @@ TEST(m4t, PointerAs) {
 
 TEST(m4t, PointeeAs) {
 	const char sz[] = "Test Test Test";
-	const void* ptr = sz;
+	const void* const ptr = sz;
 	EXPECT_THAT(ptr, PointeeAs<char>('T'));
 
 	EXPECT_NONFATAL_FAILURE(EXPECT_THAT(ptr, PointeeAs<char>('X')), "points to a value of type char that");
