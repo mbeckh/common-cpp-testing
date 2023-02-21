@@ -1,0 +1,68 @@
+{
+  "version": 4,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25
+  },
+  "include": [
+    "CMakeLocalPresets.json"
+  ],
+  "configurePresets": [
+    {
+      "name": "x64",
+      "inherits": "env",
+      "generator": "Ninja Multi-Config",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "binaryDir": "$env{BINARY_DIR}",
+      "cacheVariables": {
+        "BUILD_ROOT": {
+          "type": "PATH",
+          "value": "$env{BUILD_ROOT}"
+        },
+        "CMAKE_CONFIGURATION_TYPES": "Debug;Release"
+      },
+      "environment": {
+        "BINARY_DIR": "$env{BUILD_ROOT}/common-cpp-testing/${presetName}",
+        "CAExcludePath": "$env{BINARY_DIR}/vcpkg_installed;$env{EXTERNAL_INCLUDE};$env{INCLUDE}"
+      }
+    },
+    {
+      "name": "x64-unity",
+      "inherits": "x64",
+      "cacheVariables": {
+        "CMAKE_UNITY_BUILD": true
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "x64-debug",
+      "displayName": "Debug",
+      "configurePreset": "x64",
+      "configuration": "Debug"
+    },
+    {
+      "name": "x64-release",
+      "displayName": "Release",
+      "configurePreset": "x64",
+      "configuration": "Release"
+    },
+    {
+      "name": "x64-analyze-debug",
+      "displayName": "Analyze (Debug)",
+      "configurePreset": "x64-unity",
+      "configuration": "Debug",
+      "targets": "clang-tidy"
+    },
+    {
+      "name": "x64-analyze-release",
+      "displayName": "Analyze (Release)",
+      "configurePreset": "x64-unity",
+      "configuration": "Release",
+      "targets": "clang-tidy"
+    }
+  ]
+}

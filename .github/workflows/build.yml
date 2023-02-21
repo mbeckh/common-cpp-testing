@@ -2,7 +2,7 @@ name: Build
 
 on:
   push:
-    branches: [ master, 'feature**' ]
+    branches: [ master, 'feature**', 'fix**' ]
   pull_request:
     branches: [ master ]
 
@@ -12,8 +12,6 @@ jobs:
   build:
     name: Build
     uses: mbeckh/cmake-utils/.github/workflows/run-build.yml@v1
-    with:
-      pch: false
     secrets: inherit
     permissions:
       actions: write
